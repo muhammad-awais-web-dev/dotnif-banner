@@ -604,6 +604,9 @@
             <button type="button" class="test-btn test-btn-secondary" onclick="cycleOrbColor()">
               Cycle Orb Color
             </button>
+            <button type="button" class="test-btn test-btn-secondary" style="grid-column: 1 / -1;" onclick="testAutoSequence()">
+              Replay Page-Load Auto-Open (7s Timer)
+            </button>
           </div>
         </div>
       </div>
@@ -814,6 +817,18 @@
       if (banner && typeof banner.cyclePreset === 'function') {
         banner.cyclePreset();
       }
+    }
+
+    function testAutoSequence() {
+      const banner = document.querySelector('dotnif-redesign-banner');
+      if (!banner) return;
+      banner.close();
+      setTimeout(() => {
+        banner.open();
+        banner._autoCloseTimer = setTimeout(() => {
+          if (banner._isOpen) banner.close();
+        }, 7000);
+      }, 500);
     }
 
     function copySnippet() {

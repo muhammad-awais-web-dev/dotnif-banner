@@ -331,6 +331,22 @@
       this.render();
       this.initWebGL();
       this.bindEvents();
+
+      // Initial Auto-Open on page load with animated entrance & auto-close timer
+      const autoOpen = this.getAttribute("data-auto-open") !== "false";
+      if (autoOpen) {
+        setTimeout(() => {
+          this.open();
+
+          // Auto-close timeout on initial open (default 7 seconds, customizable)
+          const delay = parseInt(this.getAttribute("data-auto-close"), 10) || 7000;
+          this._autoCloseTimer = setTimeout(() => {
+            if (this._isOpen) {
+              this.close();
+            }
+          }, delay);
+        }, 450);
+      }
     }
 
     disconnectedCallback() {
@@ -492,15 +508,17 @@
             background: linear-gradient(155deg, rgba(110, 170, 255, 0.75), rgba(255, 255, 255, 0.08) 38%, rgba(60, 110, 255, 0.5));
             box-shadow: 0 32px 70px -14px rgba(25, 60, 200, 0.65), 0 4px 14px rgba(0, 0, 0, 0.4);
             opacity: 0;
-            transform: scale(0.94);
+            transform: scale(0.92) translateY(12px);
             visibility: hidden;
             pointer-events: none;
-            transition: opacity 0.35s ease, transform 0.45s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.35s;
+            transition: opacity 0.45s cubic-bezier(0.16, 1, 0.3, 1),
+                        transform 0.55s cubic-bezier(0.16, 1, 0.3, 1),
+                        visibility 0.45s;
           }
 
           .dn-card.is-open {
             opacity: 1;
-            transform: scale(1);
+            transform: scale(1) translateY(0);
             visibility: visible;
             pointer-events: auto;
           }
@@ -892,6 +910,16 @@
       this.$closeBtn.addEventListener("click", () => this.close());
       this.$backdrop.addEventListener("click", () => this.close());
 
+      // Pause or cancel auto-close timer when user actively hovers or clicks the card
+      const cancelAutoClose = () => {
+        if (this._autoCloseTimer) {
+          clearTimeout(this._autoCloseTimer);
+          this._autoCloseTimer = null;
+        }
+      };
+      this.$card.addEventListener("mouseenter", cancelAutoClose);
+      this.$card.addEventListener("click", cancelAutoClose);
+
       // Global window tracking
       window.addEventListener("mousemove", this._onMouseMove, { passive: true });
       window.addEventListener("touchmove", this._onTouchMove, { passive: true });
@@ -936,6 +964,11 @@
     }
 
     open() {
+      if (this._autoCloseTimer) {
+        clearTimeout(this._autoCloseTimer);
+        this._autoCloseTimer = null;
+      }
+
       this._isOpen = true;
       this.$backdrop.classList.add("is-open");
       this.$card.classList.add("is-open");
@@ -957,6 +990,11 @@
     }
 
     close() {
+      if (this._autoCloseTimer) {
+        clearTimeout(this._autoCloseTimer);
+        this._autoCloseTimer = null;
+      }
+
       this._isOpen = false;
       this.$backdrop.classList.remove("is-open");
       this.$card.classList.remove("is-open");

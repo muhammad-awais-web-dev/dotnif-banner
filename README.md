@@ -66,7 +66,20 @@ For pure studio showcases, general portfolio outreach, or minimal presentation:
 
 ---
 
-## 2. The Modified Live Orb WebGL Widget
+## 2. Animated Open / Close Lifecycle & Auto-Close Timer
+
+- **Page-Load Auto-Open**: 450ms after the host page loads, the widget executes an animated entry:
+  - The ambient radial backdrop fades in.
+  - The luxury glass card springs into the viewport center (`scale: 0.92 -> 1, translateY: 12px -> 0`).
+  - The Live Orb glides from the bottom-right corner (`60px`) to crown the card (`72px`) with Apple-like spring cubic-bezier elasticity.
+- **Auto-Close Timeout**: On initial page load, the card automatically closes after **7 seconds** (configurable via `data-auto-close="7000"`, or disabled with `data-auto-open="false"`).
+- **Engagement Pause**: If the visitor hovers over or clicks anywhere inside the card, the auto-close timer is immediately cancelled so they can read and interact undisturbed.
+- **Animated Closing**: When closing, the card smoothly scales down and fades out, while the Live Orb glides gracefully back down to its parked position at `bottom: 24px, right: 24px`, where its emerald radar beacon activates.
+- **Re-Open On Demand**: Clicking the parked orb at any time re-animates the card open.
+
+---
+
+## 3. The Modified Live Orb WebGL Widget
 
 Integrated directly into the Web Component with zero external dependencies:
 
