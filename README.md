@@ -1,8 +1,8 @@
-# DotNif Redesign Banner
+# DotNif Redesign Banner & Floating Live Orb Card
 
-A centralized, luxury dark-tech concept redesign banner and embed widget for **DotNif Engineering Studio**.
+A centralized, luxury dark-tech concept redesign card and interactive WebGL Live Orb widget for **DotNif Engineering Studio**.
 
-Paste one line into any client website redesign, and manage styling, messaging, and destination URLs across all concept sites from this single GitHub repository.
+Paste one line into any client website redesign, and control design, messaging, and destination URLs across all concept sites from this single GitHub repository.
 
 ---
 
@@ -10,70 +10,69 @@ Paste one line into any client website redesign, and manage styling, messaging, 
 
 Add this single `<script>` tag before the closing `</body>` tag on any redesigned website:
 
+### Option A: For a Specific Client Redesign (Only 1 Optional Parameter)
 ```html
-<script 
-  src="https://<your-username>.github.io/dotnif-banner/banner.js" 
-  data-client="Zero Lifestyle"
-  data-original-url="https://zerolifestyle.co"
-  data-case-study="https://dotnif.com/projects/zero-lifestyle"
-  async>
-</script>
+<script src="https://<your-username>.github.io/dotnif-banner/banner.js" data-original="https://zerolifestyle.co" async></script>
+```
+
+### Option B: Pure Studio Showcase Mode (Zero Parameters)
+```html
+<script src="https://<your-username>.github.io/dotnif-banner/banner.js" async></script>
 ```
 
 ### Alternatively via jsDelivr CDN
 ```html
-<script 
-  src="https://cdn.jsdelivr.net/gh/<your-username>/dotnif-banner@main/banner.js" 
-  data-client="Zero Lifestyle"
-  async>
-</script>
+<script src="https://cdn.jsdelivr.net/gh/<your-username>/dotnif-banner@main/banner.js" data-original="https://zerolifestyle.co" async></script>
 ```
 
 ---
 
-## 2. Supported Parameters
+## 2. The Single Optional Parameter: `data-original`
 
-All parameters are optional and configured via `data-*` attributes on the script tag:
+To keep client integration as simple and frictionless as possible, the script accepts **only one optional parameter**:
 
-| Attribute | Default | Description |
-| :--- | :--- | :--- |
-| `data-client` | Auto-detected | The brand name of the client (e.g. `Zero Lifestyle`). |
-| `data-original-url` | `""` | Link to the original client site for before/after comparison. |
-| `data-case-study` | `""` | Link to the deep-dive case study on DotNif. |
-| `data-position` | `bottom-right` | Position on screen: `bottom-right`, `bottom-left`, `bottom-center`, `top-right`, `top-left`. |
-| `data-collapsed` | `false` | When `true`, starts in compact pill mode instead of expanded card. |
-| `data-show-metrics`| `true` | Show the `99+ Core Web Vitals · Sub-second TTFB` pill. |
-| `data-accent` | `#33D2FF` | Hex color for badge, glowing dot, and button highlights. |
-| `data-cta-text` | `Scope Your Sprint` | Text for the primary action button. |
-| `data-contact-url` | `https://dotnif.com/#contact` | Override target for primary CTA button. |
+| Attribute | Type | Example | Behavior |
+| :--- | :--- | :--- | :--- |
+| `data-original` | URL or String | `https://zerolifestyle.co` | Automatically formats the client name (`Zero Lifestyle`), personalizes the card heading (`Concept Redesign for Zero Lifestyle`), and provides a direct `View Original Site` button. |
+| *(omitted)* | None | *(none)* | Displays the standard DotNif studio presentation card (`Websites engineered for growth`) with `Book a call` and `See our work` buttons. |
+
+> **Note:** If you prefer passing just the brand name (e.g. `data-original="Zero Lifestyle"`), the card adapts gracefully without needing a URL.
 
 ---
 
-## 3. How to Change Your Studio Domain Later
+## 3. The Modified Live Orb WebGL Widget
 
-If DotNif's primary domain ever changes (e.g. to `dotnif.studio` or `dotnif.io`), edit the top of `banner.js`:
+Integrated directly into the Web Component with zero external libraries:
+
+- **Interactive Eye Tracking**: Mathematical raymarching / spherical distortion shader on HTML `<canvas>` with real-time lerp easing that tracks the cursor and touch coordinates across the host page.
+- **Spontaneous Blinks**: Organic blinks trigger every 3–6 seconds automatically, with tactile blink reactions when clicked or opened.
+- **Park & Perch Glide Physics**: 
+  - **Parked (Closed)**: Floats at the bottom-right corner (`60px`), keeping watch with an active emerald radar beacon (`Taking new projects`).
+  - **Perched (Open)**: On click, smoothly glides with spring cubic-bezier easing to crown the top of the glassmorphic modal card (`72px`).
+- **Interactive Chromatic States**: Clicking the orb when open cycles through DotNif studio color states (*Electric Cyan*, *Tech Indigo*, *Emerald Mint*, *Cyber Violet*, *Platinum White*).
+
+---
+
+## 4. How Centralized Management Works
+
+If DotNif's domain or contact link ever changes in the future, update `MASTER_CONFIG` at the top of `banner.js`:
 
 ```javascript
 const MASTER_CONFIG = {
-  studioDomain: "https://dotnif.com",    // <-- Update this single line
+  studioDomain: "https://dotnif.com",    // <-- Update here
   contactUrl: "https://dotnif.com/#contact",
+  workUrl: "https://dotnif.com/#case-studies",
   ...
 };
 ```
 
-Commit and push to GitHub. Every single redesigned website will instantly route to your new domain with zero redeployments.
+Commit and push to GitHub. Every single redesign website across the web automatically updates instantly.
 
 ---
 
-## 4. Key Architectural Features
+## 5. Architectural Guarantees
 
-- **Shadow DOM Style Isolation**: Fully encapsulated. Host site CSS (Tailwind, Bootstrap, WordPress) will never break the banner, and the banner's styles will never leak into the host page.
-- **Zero Emojis**: Strictly clean SVG icons (Lucide-style).
-- **Session Dismiss Memory**: When dismissed, the banner remembers closed state in `sessionStorage` so it doesn't annoy repeat visitors.
-- **Responsive**: Safe-area insets on mobile (`env(safe-area-inset-bottom)`) and smooth collapse/expand transitions.
-
----
-
-## 5. Live Interactive Playground
-
-Open `index.html` or visit the GitHub Pages deployment to customize parameters in real time and copy generated snippets.
+- **100% Shadow DOM Shield**: Immune to all host CSS (Tailwind, Bootstrap, resets).
+- **Zero Emojis**: Strictly clean SVG icons.
+- **Mobile Responsive & Safe Insets**: Fluid layout with touch tracking.
+- **Live Interactive Sandbox**: Open `index.html` to test live presets in real time.

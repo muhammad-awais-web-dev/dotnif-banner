@@ -1,10 +1,17 @@
 /**
- * DotNif Studio — Centralized Concept Redesign Banner & Embed Widget
+ * DotNif Studio — Centralized Concept Redesign Banner & Floating Live Orb Card
  *
  * A self-contained, zero-dependency Web Component that injects a luxury dark tech
- * concept-redesign badge/modal into any client website redesign.
+ * redesign card & interactive WebGL eye-tracking Live Orb into any client website.
  *
  * Encapsulated via Shadow DOM: 100% immune to host styles.
+ *
+ * Usage:
+ *   <!-- 1. For a specific client redesign (accepts ONLY 1 optional parameter) -->
+ *   <script src="https://dotnif-banner.vercel.app/banner.js" data-original="https://zerolifestyle.co"></script>
+ *
+ *   <!-- 2. Pure agency showcase mode (zero parameters needed) -->
+ *   <script src="https://dotnif-banner.vercel.app/banner.js"></script>
  *
  * @license MIT
  * @see https://github.com/dotnif/dotnif-banner
@@ -12,28 +19,25 @@
 (function () {
   "use strict";
 
-  // Prevent duplicate injection
+  // Prevent duplicate registration
   if (window.customElements && window.customElements.get("dotnif-redesign-banner")) {
     return;
   }
 
-  /* ── 1. CENTRAL MASTER CONFIGURATION (The Single Point of Truth) ── */
-  // When you change your primary agency domain in the future,
-  // edit this object right here. Every client site updates automatically.
+  /* ── 1. MASTER CENTRAL CONFIGURATION (Single Point of Truth) ── */
+  // Update your agency domain or contact URL here; it propagates to every site.
   const MASTER_CONFIG = {
     studioDomain: "https://dotnif.com",
     contactUrl: "https://dotnif.com/#contact",
-    brandName: "DotNif Engineering Studio",
-    tagline: "High-performance web architectures & technical SEO.",
+    workUrl: "https://dotnif.com/#case-studies",
+    brandName: "DOTNIF",
     defaultAccent: "#33D2FF",
-    defaultBg: "#090A0F",
-    defaultText: "#F5F7FF",
-    storageKey: "dotnif_banner_dismissed",
+    defaultBg: "#070B1D",
   };
 
-  /* ── 2. SVG ICONS (Strictly Clean SVGs, Zero Emojis) ── */
-  const ICONS = {
-    logo: `<svg width="22" height="19" viewBox="0 0 845 716" fill="none" xmlns="http://www.w3.org/2000/svg">
+  /* ── 2. SVG ASSETS (Strictly Clean SVGs, Zero Emojis) ── */
+  const SVGS = {
+    logo: `<svg width="20" height="17" viewBox="0 0 845 716" fill="none" xmlns="http://www.w3.org/2000/svg">
       <g transform="matrix(1,0,0,1,-3501.80194,-923.127261)">
         <g transform="matrix(1,0,0,1,3501.80194,920.407261)">
           <path d="M844.3,611.27L844.3,637.45C844.3,682.03 808.16,718.17 763.58,718.17L605.38,718.17C572.25,718.17 540.79,703.59 519.37,678.31L286.82,403.79C252.93,366.94 211.17,338.21 164.64,319.72L66.43,280.7C44.37,270.15 30.32,247.86 30.32,223.4L30.32,58.42C30.32,27.66 55.26,2.72 86.02,2.72L261.45,2.72C280.39,2.72 298.56,10.24 311.96,23.64L805.2,516.88C830.23,541.92 844.3,575.87 844.3,611.27Z" fill="#33D2FF"/>
@@ -46,592 +50,870 @@
         </g>
       </g>
     </svg>`,
-    externalLink: `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+    externalLink: `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
       <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
       <polyline points="15 3 21 3 21 9"></polyline>
       <line x1="10" y1="14" x2="21" y2="3"></line>
     </svg>`,
-    arrowUpRight: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-      <line x1="7" y1="17" x2="17" y2="7"></line>
-      <polyline points="7 7 17 7 17 17"></polyline>
-    </svg>`,
-    chevronUp: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-      <polyline points="18 15 12 9 6 15"></polyline>
-    </svg>`,
-    chevronDown: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-      <polyline points="6 9 12 15 18 9"></polyline>
+    arrowRight: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <line x1="5" y1="12" x2="19" y2="12"></line>
+      <polyline points="12 5 19 12 12 19"></polyline>
     </svg>`,
     close: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
       <line x1="18" y1="6" x2="6" y2="18"></line>
       <line x1="6" y1="6" x2="18" y2="18"></line>
     </svg>`,
-    pulseCheck: `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-      <polyline points="20 6 9 17 4 12"></polyline>
-    </svg>`,
   };
 
-  /* ── 3. PARAMETER RESOLUTION HELPER ── */
-  function resolveConfig(scriptEl, globalConfig) {
-    const ds = scriptEl?.dataset || {};
-    const win = globalConfig || window.DOTNIF_BANNER_CONFIG || {};
+  /* ── 3. LIVE ORB WEBGL COLOR PRESETS ── */
+  const ORB_PRESETS = [
+    { name: "Electric Cyan", body: [0.2, 0.82, 1.0], eye: [0.98, 0.98, 0.98] },
+    { name: "Tech Indigo", body: [0.26, 0.39, 1.0], eye: [0.98, 0.98, 0.98] },
+    { name: "Emerald Mint", body: [0.06, 0.72, 0.5], eye: [0.98, 0.98, 0.98] },
+    { name: "Cyber Violet", body: [0.55, 0.36, 0.96], eye: [0.98, 0.98, 0.98] },
+    { name: "Platinum White", body: [0.97, 0.98, 0.98], eye: [0.05, 0.05, 0.08] },
+  ];
 
-    const studioUrl = win.studioUrl || ds.studioUrl || MASTER_CONFIG.studioDomain;
-    const contactUrl = win.contactUrl || ds.contactUrl || `${studioUrl}/#contact`;
+  /* ── 4. WEBGL SHADERS ── */
+  const VERT_SHADER = `
+    attribute vec2 a_position;
+    void main() { gl_Position = vec4(a_position, 0.0, 1.0); }
+  `;
 
-    // Dynamic Client Name Resolution
-    let clientName = win.client || ds.client;
-    if (!clientName) {
-      // Auto-detect from host title or subdomain
-      const host = window.location.hostname.replace(/^www\./, "");
-      clientName = host.split(".")[0];
-      if (clientName) {
-        clientName = clientName.charAt(0).toUpperCase() + clientName.slice(1);
-      } else {
-        clientName = "Client Project";
-      }
+  const FRAG_SHADER = `
+    precision highp float;
+    uniform vec2 u_resolution;
+    uniform float u_time;
+    uniform vec2 u_look;
+    uniform float u_blink;
+    uniform vec3 u_body;
+    uniform vec3 u_eye;
+
+    vec3 orient(vec3 p, vec2 look) {
+      float yaw = look.x * 0.92, pitch = -look.y * 0.78;
+      float cy = cos(yaw), sy = sin(yaw), cp = cos(pitch), sp = sin(pitch);
+      vec3 q = vec3(p.x, p.y * cp - p.z * sp, p.y * sp + p.z * cp);
+      return vec3(q.x * cy + q.z * sy, q.y, -q.x * sy + q.z * cy);
     }
 
-    return {
-      client: clientName,
-      studioUrl: studioUrl,
-      contactUrl: contactUrl,
-      originalUrl: win.originalUrl || ds.originalUrl || "",
-      caseStudyUrl: win.caseStudy || ds.caseStudy || "",
-      position: win.position || ds.position || "bottom-right",
-      theme: win.theme || ds.theme || "dark",
-      accent: win.accent || ds.accent || MASTER_CONFIG.defaultAccent,
-      ctaText: win.ctaText || ds.ctaText || "Scope Your Sprint",
-      headline: win.headline || ds.headline || `Concept Redesign by DotNif`,
-      subtext:
-        win.subtext ||
-        ds.subtext ||
-        `An uncommissioned performance engineering redesign showcase for ${clientName}.`,
-      showMetrics: (win.showMetrics !== false && ds.showMetrics !== "false"),
-      initCollapsed: (win.collapsed === true || ds.collapsed === "true"),
-      previewMode: (win.previewMode === true || ds.previewMode === "true"),
-    };
+    float eyeMask(vec3 n, vec3 e, vec3 right, vec3 up, float halfH, float rad) {
+      float facing = dot(n, e);
+      float x = dot(n, right) - dot(e, right);
+      float y = dot(n, up) - dot(e, up);
+      y -= clamp(y, -halfH, halfH);
+      float d = length(vec2(x, y)) - rad;
+      float fill = 1.0 - smoothstep(-0.015, 0.015, d);
+      return fill * smoothstep(0.12, 0.32, facing);
+    }
+
+    void main() {
+      vec2 uv = (gl_FragCoord.xy / u_resolution) * 2.0 - 1.0;
+      float aspect = u_resolution.x / max(u_resolution.y, 1.0);
+      uv.x *= aspect;
+      float radius = 0.94;
+      vec2 p = uv / radius;
+      float r2 = dot(p, p);
+      float edge = 1.0 - smoothstep(0.985, 1.012, sqrt(max(r2, 0.0)));
+      if (edge <= 0.001) { gl_FragColor = vec4(0.0); return; }
+
+      float z = sqrt(max(1.0 - r2, 0.0));
+      vec3 n = normalize(vec3(p, z));
+      vec2 look = u_look;
+      float lm = length(look);
+      if (lm > 1.0) look /= lm;
+
+      vec3 right = orient(vec3(1.0, 0.0, 0.0), look);
+      vec3 up = orient(vec3(0.0, 1.0, 0.0), look);
+      vec3 eL = orient(normalize(vec3(-0.32, 0.08, 1.0)), look);
+      vec3 eR = orient(normalize(vec3(0.32, 0.08, 1.0)), look);
+
+      float halfH = mix(0.128, 0.012, u_blink);
+      float rad = mix(0.054, 0.062, u_blink);
+      float eyes = max(eyeMask(n, eL, right, up, halfH, rad), eyeMask(n, eR, right, up, halfH, rad));
+
+      // Specular 3D rim lighting
+      vec3 light = normalize(vec3(0.4, 0.6, 1.0));
+      float spec = pow(max(dot(n, light), 0.0), 18.0) * 0.22;
+      vec3 body = u_body + vec3(spec);
+
+      vec3 col = mix(body, u_eye, clamp(eyes, 0.0, 1.0));
+      gl_FragColor = vec4(col * edge, edge);
+    }
+  `;
+
+  /* ── 5. SINGLE PARAMETER RESOLUTION ── */
+  function parseSingleParameter(el) {
+    const scriptEl =
+      document.currentScript ||
+      document.querySelector("script[data-original], script[src*='banner.js']");
+
+    const raw = (
+      el?.dataset?.original ||
+      el?.getAttribute?.("data-original") ||
+      el?.dataset?.client ||
+      el?.getAttribute?.("data-client") ||
+      scriptEl?.dataset?.original ||
+      scriptEl?.dataset?.client ||
+      window.DOTNIF_ORIGINAL ||
+      ""
+    ).trim();
+
+    if (!raw) {
+      return { hasTarget: false, clientName: "", originalUrl: "" };
+    }
+
+    const isUrl = /^https?:\/\//i.test(raw) || raw.includes(".");
+    if (isUrl) {
+      let url = raw;
+      if (!/^https?:\/\//i.test(url)) url = "https://" + url;
+
+      let hostname = "";
+      try {
+        hostname = new URL(url).hostname.replace(/^www\./i, "");
+      } catch (e) {
+        hostname = raw.replace(/^https?:\/\/(www\.)?/i, "").split("/")[0];
+      }
+
+      // Convert "zero-lifestyle.co" or "dadducharger.com" into "Zero Lifestyle"
+      const domainBase = hostname.split(".")[0];
+      const words = domainBase.split(/[-_]+/).filter(Boolean);
+      const clientName = words
+        .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+        .join(" ");
+
+      return { hasTarget: true, clientName: clientName || "Client Project", originalUrl: url };
+    }
+
+    // Direct name provided, e.g. data-original="Zero Lifestyle"
+    return { hasTarget: true, clientName: raw, originalUrl: "" };
   }
 
-  /* ── 4. WEB COMPONENT CLASS WITH SHADOW DOM ── */
+  /* ── 6. WEB COMPONENT IMPLEMENTATION ── */
   class DotNifRedesignBanner extends HTMLElement {
+    static get observedAttributes() {
+      return ["data-original", "data-client"];
+    }
+
     constructor() {
       super();
       this.attachShadow({ mode: "open" });
-      this._collapsed = false;
-      this._dismissed = false;
+      this._isOpen = false;
+      this._presetIdx = 0;
+      this._lookTarget = { x: 0, y: 0 };
+      this._lookCurrent = { x: 0, y: 0 };
+      this._blink = 0;
+      this._blinkTarget = 0;
+      this._animId = null;
+      this._nextBlinkTime = performance.now() + 2500;
+      this._onMouseMove = this._onMouseMove.bind(this);
+      this._onTouchMove = this._onTouchMove.bind(this);
+      this._onKeyDown = this._onKeyDown.bind(this);
+      this._onResize = this._onResize.bind(this);
     }
 
-    static get observedAttributes() {
-      return [
-        "data-client",
-        "data-original-url",
-        "data-case-study",
-        "data-position",
-        "data-accent",
-        "data-cta-text",
-        "data-collapsed",
-        "data-show-metrics",
-      ];
+    attributeChangedCallback(name, oldVal, newVal) {
+      if (oldVal !== newVal && this.isConnected) {
+        this._config = parseSingleParameter(this);
+        this.render();
+        this.initWebGL();
+        this.bindEvents();
+        if (this._isOpen) {
+          this.positionOrbOnCard();
+        }
+      }
     }
 
     connectedCallback() {
+      this._config = parseSingleParameter(this);
       this.render();
+      this.initWebGL();
+      this.bindEvents();
     }
 
-    attributeChangedCallback() {
-      this.render();
-    }
-
-    getConfig() {
-      const script = document.currentScript || document.querySelector("script[src*='banner.js']");
-      const base = resolveConfig(script, window.DOTNIF_BANNER_CONFIG);
-
-      // Element attribute overrides
-      return {
-        ...base,
-        client: this.getAttribute("data-client") || base.client,
-        originalUrl: this.getAttribute("data-original-url") || base.originalUrl,
-        caseStudyUrl: this.getAttribute("data-case-study") || base.caseStudyUrl,
-        position: this.getAttribute("data-position") || base.position,
-        accent: this.getAttribute("data-accent") || base.accent,
-        ctaText: this.getAttribute("data-cta-text") || base.ctaText,
-        initCollapsed:
-          this.getAttribute("data-collapsed") === "true" ||
-          (!this.hasAttribute("data-collapsed") && base.initCollapsed),
-        showMetrics:
-          this.getAttribute("data-show-metrics") !== "false" && base.showMetrics,
-      };
+    disconnectedCallback() {
+      if (this._animId) cancelAnimationFrame(this._animId);
+      window.removeEventListener("mousemove", this._onMouseMove);
+      window.removeEventListener("touchmove", this._onTouchMove);
+      window.removeEventListener("keydown", this._onKeyDown);
+      window.removeEventListener("resize", this._onResize);
     }
 
     render() {
-      const config = this.getConfig();
+      const { hasTarget, clientName, originalUrl } = this._config;
 
-      // Check dismissed state in sessionStorage (unless in live preview mode)
-      if (!config.previewMode) {
-        try {
-          if (sessionStorage.getItem(MASTER_CONFIG.storageKey) === "true") {
-            this.style.display = "none";
-            return;
-          }
-        } catch (_) {}
+      // Dynamic Title & Description based on the single parameter
+      const titleHtml = hasTarget
+        ? `Concept Redesign for <span class="dn-gradient">${clientName}</span>`
+        : `Websites engineered for <span class="dn-gradient">growth.</span>`;
+
+      const descHtml = hasTarget
+        ? `Crafted by DotNif Studio — high-performance Next.js engineering, sub-second latency, and conversion-optimized architecture.`
+        : `Boutique web studio building fast Next.js, WordPress and high-conversion e-commerce systems.`;
+
+      // Dynamic Action Buttons
+      let actionsHtml = "";
+      if (hasTarget && originalUrl) {
+        actionsHtml = `
+          <a href="${originalUrl}" target="_blank" rel="noopener noreferrer" class="dn-btn dn-btn-white">
+            View Original Site
+            ${SVGS.externalLink}
+          </a>
+          <a href="${MASTER_CONFIG.studioDomain}" target="_blank" rel="noopener noreferrer" class="dn-btn dn-btn-blue">
+            Explore DotNif Studio
+            ${SVGS.arrowRight}
+          </a>
+        `;
+      } else {
+        actionsHtml = `
+          <a href="${MASTER_CONFIG.contactUrl}" target="_blank" rel="noopener noreferrer" class="dn-btn dn-btn-white">
+            Book a call
+          </a>
+          <a href="${MASTER_CONFIG.workUrl}" target="_blank" rel="noopener noreferrer" class="dn-btn dn-btn-blue">
+            See our work
+            ${SVGS.arrowRight}
+          </a>
+        `;
       }
-
-      if (this._collapsed === undefined) {
-        this._collapsed = config.initCollapsed;
-      }
-
-      // Position CSS Map
-      const posMap = {
-        "bottom-right": "bottom: 24px; right: 24px;",
-        "bottom-left": "bottom: 24px; left: 24px;",
-        "bottom-center": "bottom: 24px; left: 50%; transform: translateX(-50%);",
-        "top-right": "top: 24px; right: 24px;",
-        "top-left": "top: 24px; left: 24px;",
-      };
-      const posCss = posMap[config.position] || posMap["bottom-right"];
 
       this.shadowRoot.innerHTML = `
         <style>
+          @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap');
+
           :host {
-            --dn-bg: #090A0F;
-            --dn-surface: rgba(14, 16, 24, 0.92);
-            --dn-border: rgba(255, 255, 255, 0.12);
-            --dn-accent: ${config.accent};
-            --dn-text: #F5F7FF;
-            --dn-muted: #8F95A5;
-            --dn-font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Inter, Helvetica, Arial, sans-serif;
-            --dn-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
             all: initial;
-            display: block;
             position: fixed;
-            ${posCss}
-            z-index: 2147483647;
-            font-family: var(--dn-font);
-            box-sizing: border-box;
-            user-select: none;
-            -webkit-user-select: none;
+            inset: 0;
+            pointer-events: none;
+            z-index: 2147483640;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            -webkit-font-smoothing: antialiased;
+            color-scheme: dark;
           }
 
-          *, *::before, *::after {
+          * {
             box-sizing: border-box;
             margin: 0;
             padding: 0;
           }
 
-          /* Main Container */
-          .dn-wrap {
-            position: relative;
-            max-width: calc(100vw - 32px);
-            width: 380px;
-            color: var(--dn-text);
-            font-size: 13px;
-            line-height: 1.5;
-            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-            filter: drop-shadow(0 16px 36px rgba(0, 0, 0, 0.55));
+          /* Radar pulse keyframes for availability beacon */
+          @keyframes dnPulse {
+            0% { box-shadow: 0 0 0 0 rgba(52, 211, 153, 0.6); }
+            70% { box-shadow: 0 0 0 8px rgba(52, 211, 153, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(52, 211, 153, 0); }
           }
 
-          /* ── COMPACT PILL MODE ── */
-          .dn-pill {
+          @keyframes dnRing {
+            0% { transform: scale(1); opacity: 0.8; }
+            100% { transform: scale(1.6); opacity: 0; }
+          }
+
+          /* Ambient dimming backdrop */
+          .dn-backdrop {
+            position: fixed;
+            inset: 0;
+            background: radial-gradient(circle at 50% 50%, rgba(9, 11, 23, 0.72), rgba(5, 7, 16, 0.88));
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+            transition: opacity 0.4s ease, visibility 0.4s;
+            z-index: 1;
+          }
+          .dn-backdrop.is-open {
+            opacity: 1;
+            visibility: visible;
+            pointer-events: auto;
+          }
+
+          /* Luxury Modal Card */
+          .dn-card-wrapper {
+            position: fixed;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            pointer-events: none;
+            z-index: 2;
+          }
+
+          .dn-card {
+            width: 100%;
+            max-width: 380px;
+            border-radius: 24px;
+            padding: 1px;
+            background: linear-gradient(155deg, rgba(110, 170, 255, 0.75), rgba(255, 255, 255, 0.08) 38%, rgba(60, 110, 255, 0.5));
+            box-shadow: 0 32px 70px -14px rgba(25, 60, 200, 0.65), 0 4px 14px rgba(0, 0, 0, 0.4);
+            opacity: 0;
+            transform: scale(0.85) translateY(24px);
+            visibility: hidden;
+            pointer-events: none;
+            transition: opacity 0.35s ease, transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1), visibility 0.35s;
+          }
+
+          .dn-card.is-open {
+            opacity: 1;
+            transform: scale(1) translateY(0);
+            visibility: visible;
+            pointer-events: auto;
+          }
+
+          .dn-card-inner {
+            position: relative;
+            overflow: hidden;
+            border-radius: 23px;
+            padding: 56px 26px 26px;
+            text-align: center;
+            background: radial-gradient(130% 70% at 50% 0%, rgba(47, 107, 255, 0.45), rgba(47, 107, 255, 0) 65%),
+                        radial-gradient(90% 60% at 0% 100%, rgba(51, 214, 255, 0.14), rgba(51, 214, 255, 0) 60%),
+                        #070B1D;
+            color: #FFFFFF;
+          }
+
+          /* Close button */
+          .dn-close-btn {
+            position: absolute;
+            top: 14px;
+            right: 14px;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: rgba(255, 255, 255, 0.07);
+            color: #c7d2f5;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.15s ease, transform 0.15s ease, color 0.15s ease;
+          }
+          .dn-close-btn:hover {
+            background: rgba(255, 255, 255, 0.16);
+            color: #FFFFFF;
+            transform: scale(1.05);
+          }
+          .dn-close-btn:active {
+            transform: scale(0.92);
+          }
+
+          /* Header Brand Title */
+          .dn-brand {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            font-family: 'Space Grotesk', system-ui, sans-serif;
+            font-size: 13px;
+            font-weight: 700;
+            letter-spacing: 0.24em;
+            color: #C7D2F5;
+            text-transform: uppercase;
+          }
+
+          /* Status pill */
+          .dn-status-badge {
             display: inline-flex;
             align-items: center;
-            gap: 10px;
-            padding: 8px 14px 8px 10px;
+            gap: 8px;
+            margin-top: 12px;
+            padding: 5px 12px 5px 10px;
             border-radius: 999px;
-            background: rgba(9, 10, 15, 0.95);
-            border: 1px solid var(--dn-border);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            cursor: pointer;
-            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
-            transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            font-size: 11.5px;
+            font-weight: 500;
+            color: #C7D2F5;
           }
-          .dn-pill:hover {
-            transform: translateY(-2px);
-            border-color: var(--dn-accent);
-            box-shadow: 0 12px 28px rgba(51, 210, 255, 0.2);
-          }
-          .dn-pill-dot {
+
+          .dn-status-dot {
             width: 7px;
             height: 7px;
             border-radius: 50%;
-            background: var(--dn-accent);
-            box-shadow: 0 0 8px var(--dn-accent);
-            animation: dnPulse 1.8s infinite ease-in-out;
-            flex-shrink: 0;
+            background: #10B981;
+            animation: dnPulse 2.2s infinite;
           }
-          .dn-pill-text {
-            font-size: 12px;
+
+          /* Headline */
+          .dn-title {
+            margin: 14px 0 0;
+            font-family: 'Space Grotesk', system-ui, sans-serif;
+            font-size: 26px;
+            line-height: 1.15;
             font-weight: 600;
             letter-spacing: -0.01em;
-            color: var(--dn-text);
-            white-space: nowrap;
-          }
-          .dn-pill-text span {
-            color: var(--dn-accent);
-          }
-          .dn-pill-arrow {
-            color: var(--dn-muted);
-            display: flex;
-            align-items: center;
           }
 
-          /* ── EXPANDED CARD MODE ── */
-          .dn-card {
-            border-radius: 16px;
-            background: var(--dn-surface);
-            border: 1px solid var(--dn-border);
-            backdrop-filter: blur(28px);
-            -webkit-backdrop-filter: blur(28px);
-            overflow: hidden;
-            box-shadow: 0 20px 48px -10px rgba(0, 0, 0, 0.75), inset 0 1px 1px rgba(255, 255, 255, 0.15);
-            animation: dnSlideUp 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+          .dn-gradient {
+            background: linear-gradient(90deg, #6EA8FF, #33D2FF);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
           }
 
-          /* Top Header Bar */
-          .dn-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 12px 14px 12px 16px;
-            background: rgba(255, 255, 255, 0.03);
-            border-bottom: 1px solid rgba(255, 255, 255, 0.07);
-          }
-          .dn-brand-lockup {
-            display: flex;
-            align-items: center;
-            gap: 9px;
-            text-decoration: none;
-            color: inherit;
-          }
-          .dn-badge {
-            font-family: var(--dn-mono);
-            font-size: 10px;
-            font-weight: 600;
-            letter-spacing: 0.08em;
-            text-transform: uppercase;
-            padding: 2.5px 7px;
-            border-radius: 999px;
-            background: rgba(51, 210, 255, 0.12);
-            color: var(--dn-accent);
-            border: 1px solid rgba(51, 210, 255, 0.3);
-          }
-          .dn-controls {
-            display: flex;
-            align-items: center;
-            gap: 4px;
-          }
-          .dn-btn-icon {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            width: 26px;
-            height: 26px;
-            border-radius: 6px;
-            background: transparent;
-            border: 1px solid transparent;
-            color: var(--dn-muted);
-            cursor: pointer;
-            transition: all 0.15s ease;
-          }
-          .dn-btn-icon:hover {
-            background: rgba(255, 255, 255, 0.08);
-            border-color: rgba(255, 255, 255, 0.12);
-            color: var(--dn-text);
-          }
-
-          /* Body Content */
-          .dn-body {
-            padding: 16px;
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-          }
-          .dn-headline {
-            font-size: 14px;
-            font-weight: 700;
-            letter-spacing: -0.015em;
-            color: #FFFFFF;
-            line-height: 1.35;
-          }
+          /* Description */
           .dn-desc {
-            font-size: 12px;
-            color: var(--dn-muted);
-            line-height: 1.5;
-          }
-          .dn-desc strong {
-            color: var(--dn-text);
-            font-weight: 600;
+            margin: 10px 0 0;
+            font-size: 13px;
+            line-height: 1.55;
+            color: #AAB5D8;
           }
 
-          /* Performance Metrics Chip */
-          .dn-metrics {
+          /* Tech tags */
+          .dn-tags {
             display: flex;
-            align-items: center;
-            gap: 8px;
-            padding: 8px 10px;
-            border-radius: 8px;
-            background: rgba(16, 185, 129, 0.08);
-            border: 1px solid rgba(16, 185, 129, 0.22);
-            font-family: var(--dn-mono);
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 6px;
+            margin-top: 14px;
+          }
+
+          .dn-tag {
+            padding: 4px 10px;
+            border-radius: 999px;
+            background: rgba(59, 108, 255, 0.16);
+            border: 1px solid rgba(110, 170, 255, 0.25);
             font-size: 11px;
-            color: #A7F3D0;
+            font-weight: 500;
+            color: #C7D8FF;
             letter-spacing: 0.02em;
           }
-          .dn-metrics-badge {
-            font-weight: 700;
-            color: #10B981;
-          }
 
-          /* Actions Grid */
+          /* Action Buttons */
           .dn-actions {
             display: flex;
-            flex-direction: column;
-            gap: 8px;
-            margin-top: 4px;
-          }
-          .dn-btn-primary {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 7px;
-            width: 100%;
-            padding: 10px 14px;
-            border-radius: 8px;
-            background: #FFFFFF;
-            color: #090A0F;
-            font-size: 12px;
-            font-weight: 700;
-            letter-spacing: -0.01em;
-            text-decoration: none;
-            border: none;
-            cursor: pointer;
-            transition: all 0.2s ease;
-          }
-          .dn-btn-primary:hover {
-            background: var(--dn-accent);
-            color: #090A0F;
-            box-shadow: 0 4px 16px rgba(51, 210, 255, 0.35);
+            gap: 10px;
+            margin-top: 22px;
           }
 
-          .dn-secondary-row {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-          }
-          .dn-btn-secondary {
+          .dn-btn {
             flex: 1;
+            min-height: 44px;
             display: flex;
             align-items: center;
             justify-content: center;
             gap: 6px;
-            padding: 7px 10px;
-            border-radius: 7px;
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            color: var(--dn-muted);
-            font-size: 11px;
-            font-weight: 500;
+            border-radius: 999px;
+            font-size: 13.5px;
+            font-weight: 600;
             text-decoration: none;
             cursor: pointer;
-            transition: all 0.15s ease;
-          }
-          .dn-btn-secondary:hover {
-            background: rgba(255, 255, 255, 0.1);
-            border-color: rgba(255, 255, 255, 0.2);
-            color: var(--dn-text);
+            transition: transform 0.15s ease, box-shadow 0.15s ease, filter 0.15s ease;
           }
 
-          /* Footer Credit */
-          .dn-footer {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 8px 16px 12px;
-            font-size: 10px;
-            color: rgba(245, 247, 255, 0.4);
-            font-family: var(--dn-mono);
+          .dn-btn-white {
+            background: #FFFFFF;
+            color: #070B1D;
           }
-          .dn-footer a {
-            color: var(--dn-muted);
-            text-decoration: none;
-            transition: color 0.15s;
+          .dn-btn-white:hover {
+            transform: translateY(-1.5px);
+            box-shadow: 0 8px 22px -6px rgba(255, 255, 255, 0.35);
           }
-          .dn-footer a:hover {
-            color: var(--dn-accent);
+          .dn-btn-white:active {
+            transform: scale(0.96);
           }
 
-          /* Keyframe Animations */
-          @keyframes dnPulse {
-            0% { transform: scale(0.85); opacity: 0.6; }
-            50% { transform: scale(1.15); opacity: 1; box-shadow: 0 0 10px var(--dn-accent); }
-            100% { transform: scale(0.85); opacity: 0.6; }
+          .dn-btn-blue {
+            background: linear-gradient(135deg, #2F6BFF, #4A8DFF);
+            color: #FFFFFF;
+            box-shadow: 0 8px 20px -8px rgba(47, 107, 255, 0.9), inset 0 1px 0 rgba(255, 255, 255, 0.25);
           }
-          @keyframes dnSlideUp {
-            from { opacity: 0; transform: translateY(12px) scale(0.97); }
-            to { opacity: 1; transform: translateY(0) scale(1); }
+          .dn-btn-blue:hover {
+            transform: translateY(-1.5px);
+            filter: brightness(1.12);
+          }
+          .dn-btn-blue:active {
+            transform: scale(0.96);
           }
 
-          /* Mobile Responsive */
+          /* ── THE LIVE ORB (Smooth Transition from Corner to Card Crown) ── */
+          .dn-orb-trigger {
+            position: fixed;
+            z-index: 3;
+            margin: 0;
+            padding: 0;
+            border: 0;
+            cursor: pointer;
+            border-radius: 50%;
+            pointer-events: auto;
+            background: radial-gradient(circle at 32% 26%, #C4D4FF 0, #7894FF 22%, #4364FF 54%, #1F2FB0 100%);
+            box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.2),
+                        0 10px 28px -6px rgba(67, 100, 255, 0.8),
+                        0 0 42px 4px rgba(67, 100, 255, 0.4);
+            transition: top 0.65s cubic-bezier(0.34, 1.25, 0.5, 1),
+                        left 0.65s cubic-bezier(0.34, 1.25, 0.5, 1),
+                        right 0.65s cubic-bezier(0.34, 1.25, 0.5, 1),
+                        bottom 0.65s cubic-bezier(0.34, 1.25, 0.5, 1),
+                        width 0.65s cubic-bezier(0.34, 1.25, 0.5, 1),
+                        height 0.65s cubic-bezier(0.34, 1.25, 0.5, 1),
+                        transform 0.15s ease,
+                        filter 0.15s ease;
+          }
+
+          /* Parked Closed State: Bottom Right Corner */
+          .dn-orb-trigger.is-closed {
+            right: 24px;
+            bottom: 24px;
+            width: 60px;
+            height: 60px;
+            left: auto;
+            top: auto;
+          }
+
+          /* Perched Open State: Crown of the Center Card */
+          .dn-orb-trigger.is-open {
+            width: 72px;
+            height: 72px;
+            /* Coordinate set dynamically by JS based on card rect */
+          }
+
+          .dn-orb-trigger:hover {
+            filter: brightness(1.12);
+          }
+          .dn-orb-trigger:active {
+            transform: scale(0.92);
+          }
+
+          /* Outer radar ring when closed */
+          .dn-orb-trigger::after {
+            content: "";
+            position: absolute;
+            inset: -4px;
+            border-radius: 50%;
+            border: 1.5px solid rgba(110, 150, 255, 0.7);
+            opacity: 0;
+            pointer-events: none;
+          }
+          .dn-orb-trigger.is-closed::after {
+            animation: dnRing 2.4s ease-out infinite;
+          }
+
+          /* Green dot indicator on the orb */
+          .dn-orb-beacon {
+            position: absolute;
+            right: 2px;
+            bottom: 4px;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #10B981;
+            border: 2px solid #070B1D;
+            box-sizing: border-box;
+            animation: dnPulse 2.2s infinite;
+            transition: opacity 0.3s;
+          }
+          .dn-orb-trigger.is-open .dn-orb-beacon {
+            opacity: 0;
+            pointer-events: none;
+          }
+
+          /* WebGL canvas element */
+          .dn-canvas {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            display: block;
+            pointer-events: none;
+          }
+
+          /* Responsive adjustments */
           @media (max-width: 480px) {
-            :host {
-              left: 14px !important;
-              right: 14px !important;
-              bottom: calc(14px + env(safe-area-inset-bottom, 0px)) !important;
-              transform: none !important;
+            .dn-card {
+              max-width: calc(100vw - 32px);
             }
-            .dn-wrap {
-              width: 100%;
-              max-width: 100%;
+            .dn-orb-trigger.is-closed {
+              right: 16px;
+              bottom: 16px;
+              width: 52px;
+              height: 52px;
+            }
+          }
+
+          @media (prefers-reduced-motion: reduce) {
+            .dn-status-dot, .dn-orb-trigger::after, .dn-orb-beacon {
+              animation: none;
+            }
+            .dn-orb-trigger, .dn-card, .dn-backdrop {
+              transition: none !important;
             }
           }
         </style>
 
-        <div class="dn-wrap">
-          ${
-            this._collapsed
-              ? `
-              <!-- Compact Mode -->
-              <div class="dn-pill" id="dn-expand-trigger" role="button" aria-label="Expand concept redesign details">
-                <span class="dn-pill-dot"></span>
-                ${ICONS.logo}
-                <span class="dn-pill-text">Concept Redesign · <span>${config.client}</span></span>
-                <span class="dn-pill-arrow">${ICONS.chevronUp}</span>
+        <!-- Ethereal Backdrop -->
+        <div class="dn-backdrop" id="dnBackdrop"></div>
+
+        <!-- Center Card Container -->
+        <div class="dn-card-wrapper">
+          <aside class="dn-card" id="dnCard" aria-label="DOTNIF web studio redesign">
+            <div class="dn-card-inner">
+              <button type="button" class="dn-close-btn" id="dnCloseBtn" aria-label="Close modal">
+                ${SVGS.close}
+              </button>
+
+              <div class="dn-brand">
+                ${SVGS.logo}
+                ${MASTER_CONFIG.brandName}
               </div>
-            `
-              : `
-              <!-- Expanded Mode -->
-              <div class="dn-card">
-                <!-- Header -->
-                <div class="dn-header">
-                  <a href="${config.studioUrl}" target="_blank" rel="noopener noreferrer" class="dn-brand-lockup" aria-label="Visit DotNif Studio">
-                    ${ICONS.logo}
-                    <span class="dn-badge">Concept Spec</span>
-                  </a>
-                  <div class="dn-controls">
-                    <button class="dn-btn-icon" id="dn-collapse-btn" title="Minimize to pill" aria-label="Minimize">
-                      ${ICONS.chevronDown}
-                    </button>
-                    <button class="dn-btn-icon" id="dn-close-btn" title="Close banner" aria-label="Close">
-                      ${ICONS.close}
-                    </button>
-                  </div>
-                </div>
 
-                <!-- Body -->
-                <div class="dn-body">
-                  <div class="dn-headline">
-                    ${config.headline}
-                  </div>
-                  <p class="dn-desc">
-                    ${config.subtext}
-                  </p>
-
-                  ${
-                    config.showMetrics
-                      ? `
-                    <div class="dn-metrics">
-                      ${ICONS.pulseCheck}
-                      <span><span class="dn-metrics-badge">99+</span> Core Web Vitals · Sub-second TTFB</span>
-                    </div>
-                  `
-                      : ""
-                  }
-
-                  <!-- Action Buttons -->
-                  <div class="dn-actions">
-                    <a href="${config.contactUrl}" target="_blank" rel="noopener noreferrer" class="dn-btn-primary">
-                      <span>${config.ctaText}</span>
-                      ${ICONS.arrowUpRight}
-                    </a>
-
-                    ${
-                      config.originalUrl || config.caseStudyUrl
-                        ? `
-                      <div class="dn-secondary-row">
-                        ${
-                          config.originalUrl
-                            ? `
-                          <a href="${config.originalUrl}" target="_blank" rel="noopener noreferrer" class="dn-btn-secondary">
-                            <span>Original Site</span>
-                            ${ICONS.externalLink}
-                          </a>
-                        `
-                            : ""
-                        }
-                        ${
-                          config.caseStudyUrl
-                            ? `
-                          <a href="${config.caseStudyUrl}" target="_blank" rel="noopener noreferrer" class="dn-btn-secondary">
-                            <span>Case Study</span>
-                            ${ICONS.arrowUpRight}
-                          </a>
-                        `
-                            : ""
-                        }
-                      </div>
-                    `
-                        : ""
-                    }
-                  </div>
-                </div>
-
-                <!-- Footer Credit -->
-                <div class="dn-footer">
-                  <span>Engineered by DotNif</span>
-                  <a href="${config.studioUrl}" target="_blank" rel="noopener noreferrer">dotnif.com ↗</a>
-                </div>
+              <div class="dn-status-badge">
+                <span class="dn-status-dot"></span>
+                Taking new projects
               </div>
-            `
-          }
+
+              <h2 class="dn-title">${titleHtml}</h2>
+              <p class="dn-desc">${descHtml}</p>
+
+              <div class="dn-tags">
+                <span class="dn-tag">Next.js</span>
+                <span class="dn-tag">WordPress</span>
+                <span class="dn-tag">WooCommerce</span>
+                <span class="dn-tag">SEO</span>
+              </div>
+
+              <div class="dn-actions">
+                ${actionsHtml}
+              </div>
+            </div>
+          </aside>
         </div>
+
+        <!-- The Interactive WebGL Live Orb -->
+        <button type="button" class="dn-orb-trigger is-closed" id="dnOrb" aria-label="DOTNIF orb: toggle studio card" aria-expanded="false">
+          <canvas class="dn-canvas" id="dnCanvas" width="144" height="144"></canvas>
+          <span class="dn-orb-beacon"></span>
+        </button>
       `;
 
-      // Event Bindings
-      const expandTrigger = this.shadowRoot.getElementById("dn-expand-trigger");
-      if (expandTrigger) {
-        expandTrigger.addEventListener("click", () => {
-          this._collapsed = false;
-          this.render();
-        });
+      this.$backdrop = this.shadowRoot.getElementById("dnBackdrop");
+      this.$card = this.shadowRoot.getElementById("dnCard");
+      this.$closeBtn = this.shadowRoot.getElementById("dnCloseBtn");
+      this.$orb = this.shadowRoot.getElementById("dnOrb");
+      this.$canvas = this.shadowRoot.getElementById("dnCanvas");
+    }
+
+    bindEvents() {
+      // Toggle card open on orb click
+      this.$orb.addEventListener("click", () => {
+        if (!this._isOpen) {
+          this.open();
+        } else {
+          // If already open, clicking the orb cycles through color presets
+          this.cyclePreset();
+        }
+      });
+
+      // Close handlers
+      this.$closeBtn.addEventListener("click", () => this.close());
+      this.$backdrop.addEventListener("click", () => this.close());
+
+      // Global window tracking
+      window.addEventListener("mousemove", this._onMouseMove, { passive: true });
+      window.addEventListener("touchmove", this._onTouchMove, { passive: true });
+      window.addEventListener("keydown", this._onKeyDown);
+      window.addEventListener("resize", this._onResize, { passive: true });
+    }
+
+    _onMouseMove(e) {
+      if (!this.$orb) return;
+      const rect = this.$orb.getBoundingClientRect();
+      const cx = rect.left + rect.width / 2;
+      const cy = rect.top + rect.height / 2;
+      const dx = (e.clientX - cx) / (window.innerWidth / 2);
+      const dy = (e.clientY - cy) / (window.innerHeight / 2);
+      this._lookTarget.x = Math.max(-1, Math.min(1, dx * 1.5));
+      this._lookTarget.y = Math.max(-1, Math.min(1, dy * 1.5));
+    }
+
+    _onTouchMove(e) {
+      if (e.touches && e.touches[0]) {
+        this._onMouseMove(e.touches[0]);
+      }
+    }
+
+    _onKeyDown(e) {
+      if (e.key === "Escape" && this._isOpen) {
+        this.close();
+      }
+    }
+
+    _onResize() {
+      if (this._isOpen) {
+        this.positionOrbOnCard();
+      }
+    }
+
+    open() {
+      this._isOpen = true;
+      this.$backdrop.classList.add("is-open");
+      this.$card.classList.add("is-open");
+      this.$orb.classList.remove("is-closed");
+      this.$orb.classList.add("is-open");
+      this.$orb.setAttribute("aria-expanded", "true");
+
+      // Give card a brief tick to layout, then anchor orb
+      requestAnimationFrame(() => {
+        this.positionOrbOnCard();
+      });
+
+      // Spontaneous blink on open
+      this._blinkTarget = 1;
+      setTimeout(() => { this._blinkTarget = 0; }, 180);
+    }
+
+    close() {
+      this._isOpen = false;
+      this.$backdrop.classList.remove("is-open");
+      this.$card.classList.remove("is-open");
+      this.$orb.classList.remove("is-open");
+      this.$orb.classList.add("is-closed");
+      this.$orb.setAttribute("aria-expanded", "false");
+
+      // Reset inline coordinates so CSS puts it back at bottom right
+      this.$orb.style.left = "";
+      this.$orb.style.top = "";
+      this.$orb.style.right = "";
+      this.$orb.style.bottom = "";
+
+      // Quick blink on dismissal
+      this._blinkTarget = 1;
+      setTimeout(() => { this._blinkTarget = 0; }, 180);
+    }
+
+    positionOrbOnCard() {
+      if (!this.$card || !this.$orb) return;
+      const cardRect = this.$card.getBoundingClientRect();
+      // Center horizontally on card, half overlapping the top edge
+      const orbSize = 72;
+      const targetLeft = cardRect.left + (cardRect.width - orbSize) / 2;
+      const targetTop = cardRect.top - orbSize / 2;
+
+      this.$orb.style.left = `${Math.round(targetLeft)}px`;
+      this.$orb.style.top = `${Math.round(targetTop)}px`;
+      this.$orb.style.right = "auto";
+      this.$orb.style.bottom = "auto";
+    }
+
+    cyclePreset() {
+      this._presetIdx = (this._presetIdx + 1) % ORB_PRESETS.length;
+      // Quick blink reaction on color change
+      this._blinkTarget = 1;
+      setTimeout(() => { this._blinkTarget = 0; }, 160);
+    }
+
+    /* ── 7. WEBGL ENGINE INITIALIZATION ── */
+    initWebGL() {
+      const gl = this.$canvas.getContext("webgl", { alpha: true, antialias: true });
+      if (!gl) {
+        console.warn("[DotNif Orb] WebGL not supported; using CSS fallback.");
+        return;
       }
 
-      const collapseBtn = this.shadowRoot.getElementById("dn-collapse-btn");
-      if (collapseBtn) {
-        collapseBtn.addEventListener("click", () => {
-          this._collapsed = true;
-          this.render();
-        });
+      function createShader(type, src) {
+        const s = gl.createShader(type);
+        gl.shaderSource(s, src);
+        gl.compileShader(s);
+        if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) {
+          console.error("[DotNif Orb Shader Error]", gl.getShaderInfoLog(s));
+          gl.deleteShader(s);
+          return null;
+        }
+        return s;
       }
 
-      const closeBtn = this.shadowRoot.getElementById("dn-close-btn");
-      if (closeBtn) {
-        closeBtn.addEventListener("click", () => {
-          if (!config.previewMode) {
-            try {
-              sessionStorage.setItem(MASTER_CONFIG.storageKey, "true");
-            } catch (_) {}
-          }
-          this.style.display = "none";
-        });
+      const vs = createShader(gl.VERTEX_SHADER, VERT_SHADER);
+      const fs = createShader(gl.FRAGMENT_SHADER, FRAG_SHADER);
+      const prog = gl.createProgram();
+      gl.attachShader(prog, vs);
+      gl.attachShader(prog, fs);
+      gl.linkProgram(prog);
+
+      if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) {
+        console.error("[DotNif Orb Program Error]", gl.getProgramInfoLog(prog));
+        return;
       }
+
+      gl.useProgram(prog);
+
+      // Full quad buffer
+      const posBuf = gl.createBuffer();
+      gl.bindBuffer(gl.ARRAY_BUFFER, posBuf);
+      gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([
+        -1, -1,
+         1, -1,
+        -1,  1,
+        -1,  1,
+         1, -1,
+         1,  1,
+      ]), gl.STATIC_DRAW);
+
+      const aPos = gl.getAttribLocation(prog, "a_position");
+      gl.enableVertexAttribArray(aPos);
+      gl.vertexAttribPointer(aPos, 2, gl.FLOAT, false, 0, 0);
+
+      const uRes = gl.getUniformLocation(prog, "u_resolution");
+      const uTime = gl.getUniformLocation(prog, "u_time");
+      const uLook = gl.getUniformLocation(prog, "u_look");
+      const uBlink = gl.getUniformLocation(prog, "u_blink");
+      const uBody = gl.getUniformLocation(prog, "u_body");
+      const uEye = gl.getUniformLocation(prog, "u_eye");
+
+      gl.viewport(0, 0, 144, 144);
+      gl.uniform2f(uRes, 144, 144);
+
+      const startTime = performance.now();
+
+      const renderLoop = (now) => {
+        // Smooth gaze tracking physics (Lerp)
+        const lerpFactor = 0.085;
+        this._lookCurrent.x += (this._lookTarget.x - this._lookCurrent.x) * lerpFactor;
+        this._lookCurrent.y += (this._lookTarget.y - this._lookCurrent.y) * lerpFactor;
+
+        // Periodic spontaneous organic blinks
+        if (now > this._nextBlinkTime) {
+          this._blinkTarget = 1;
+          this._nextBlinkTime = now + 3000 + Math.random() * 3500;
+          setTimeout(() => { this._blinkTarget = 0; }, 140);
+        }
+
+        // Smooth blink interpolation
+        this._blink += (this._blinkTarget - this._blink) * 0.35;
+
+        // Current color preset
+        const preset = ORB_PRESETS[this._presetIdx];
+
+        gl.clearColor(0, 0, 0, 0);
+        gl.clear(gl.COLOR_BUFFER_BIT);
+
+        gl.uniform1f(uTime, (now - startTime) * 0.001);
+        gl.uniform2f(uLook, this._lookCurrent.x, this._lookCurrent.y);
+        gl.uniform1f(uBlink, this._blink);
+        gl.uniform3f(uBody, preset.body[0], preset.body[1], preset.body[2]);
+        gl.uniform3f(uEye, preset.eye[0], preset.eye[1], preset.eye[2]);
+
+        gl.drawArrays(gl.TRIANGLES, 0, 6);
+
+        this._animId = requestAnimationFrame(renderLoop);
+      };
+
+      this._animId = requestAnimationFrame(renderLoop);
     }
   }
 
-  // Register Web Component
-  window.customElements.define("dotnif-redesign-banner", DotNifRedesignBanner);
+  // Define custom element
+  customElements.define("dotnif-redesign-banner", DotNifRedesignBanner);
 
-  /* ── 5. AUTO-INITIALIZATION ── */
-  function autoMount() {
-    // Only auto-mount if not already present on page
+  // Auto-mount into document body
+  function mount() {
     if (!document.querySelector("dotnif-redesign-banner")) {
-      const banner = document.createElement("dotnif-redesign-banner");
-      document.body.appendChild(banner);
+      const el = document.createElement("dotnif-redesign-banner");
+      document.body.appendChild(el);
     }
   }
 
   if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", autoMount);
+    document.addEventListener("DOMContentLoaded", mount);
   } else {
-    autoMount();
+    mount();
   }
 })();
