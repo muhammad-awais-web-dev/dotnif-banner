@@ -25,7 +25,6 @@
   }
 
   /* ── 1. MASTER CENTRAL CONFIGURATION (Single Point of Truth) ── */
-  // Update your agency domain or contact URL here; it propagates to every site.
   const MASTER_CONFIG = {
     studioDomain: "https://dotnif.com",
     contactUrl: "https://dotnif.com/#contact",
@@ -37,7 +36,7 @@
 
   /* ── 2. SVG ASSETS (Strictly Clean SVGs, Zero Emojis) ── */
   const SVGS = {
-    logo: `<svg width="20" height="17" viewBox="0 0 845 716" fill="none" xmlns="http://www.w3.org/2000/svg">
+    logo: `<svg width="18" height="15" viewBox="0 0 845 716" fill="none" xmlns="http://www.w3.org/2000/svg">
       <g transform="matrix(1,0,0,1,-3501.80194,-923.127261)">
         <g transform="matrix(1,0,0,1,3501.80194,920.407261)">
           <path d="M844.3,611.27L844.3,637.45C844.3,682.03 808.16,718.17 763.58,718.17L605.38,718.17C572.25,718.17 540.79,703.59 519.37,678.31L286.82,403.79C252.93,366.94 211.17,338.21 164.64,319.72L66.43,280.7C44.37,270.15 30.32,247.86 30.32,223.4L30.32,58.42C30.32,27.66 55.26,2.72 86.02,2.72L261.45,2.72C280.39,2.72 298.56,10.24 311.96,23.64L805.2,516.88C830.23,541.92 844.3,575.87 844.3,611.27Z" fill="#33D2FF"/>
@@ -50,16 +49,16 @@
         </g>
       </g>
     </svg>`,
-    externalLink: `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    externalLink: `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
       <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
       <polyline points="15 3 21 3 21 9"></polyline>
       <line x1="10" y1="14" x2="21" y2="3"></line>
     </svg>`,
-    arrowRight: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    arrowRight: `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
       <line x1="5" y1="12" x2="19" y2="12"></line>
       <polyline points="12 5 19 12 12 19"></polyline>
     </svg>`,
-    close: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    close: `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
       <line x1="18" y1="6" x2="6" y2="18"></line>
       <line x1="6" y1="6" x2="18" y2="18"></line>
     </svg>`,
@@ -141,7 +140,42 @@
     }
   `;
 
-  /* ── 5. SINGLE PARAMETER RESOLUTION ── */
+  /* ── 5. INTELLIGENT BRAND NAME FORMATTER ── */
+  function formatBrandName(str) {
+    if (!str) return "Client Project";
+
+    // If explicit spaces, hyphens or underscores exist
+    if (/[\s\-_]/.test(str)) {
+      return str
+        .split(/[\s\-_]+/)
+        .filter(Boolean)
+        .map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+        .join(" ");
+    }
+
+    const lower = str.toLowerCase();
+    const known = {
+      zerolifestyle: "Zero Lifestyle",
+      dadducharger: "Daddu Charger",
+      janfranko: "Jan Franko",
+    };
+    if (known[lower]) return known[lower];
+
+    // Split compound words via common suffixes
+    const m = lower.match(
+      /^([a-z0-9]+?)(lifestyle|charger|studio|design|agency|tech|store|shop|lab|hub|group|wear|app|pay)$/
+    );
+    if (m) {
+      const p1 = m[1].charAt(0).toUpperCase() + m[1].slice(1);
+      const p2 = m[2].charAt(0).toUpperCase() + m[2].slice(1);
+      return `${p1} ${p2}`;
+    }
+
+    // Default title case
+    return str.charAt(0).toUpperCase() + str.slice(1);
+  }
+
+  /* ── 6. SINGLE PARAMETER RESOLUTION ── */
   function parseSingleParameter(el) {
     const scriptEl =
       document.currentScript ||
@@ -174,21 +208,17 @@
         hostname = raw.replace(/^https?:\/\/(www\.)?/i, "").split("/")[0];
       }
 
-      // Convert "zero-lifestyle.co" or "dadducharger.com" into "Zero Lifestyle"
       const domainBase = hostname.split(".")[0];
-      const words = domainBase.split(/[-_]+/).filter(Boolean);
-      const clientName = words
-        .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
-        .join(" ");
+      const clientName = formatBrandName(domainBase);
 
       return { hasTarget: true, clientName: clientName || "Client Project", originalUrl: url };
     }
 
     // Direct name provided, e.g. data-original="Zero Lifestyle"
-    return { hasTarget: true, clientName: raw, originalUrl: "" };
+    return { hasTarget: true, clientName: formatBrandName(raw), originalUrl: "" };
   }
 
-  /* ── 6. WEB COMPONENT IMPLEMENTATION ── */
+  /* ── 7. WEB COMPONENT IMPLEMENTATION ── */
   class DotNifRedesignBanner extends HTMLElement {
     static get observedAttributes() {
       return ["data-original", "data-client"];
@@ -241,35 +271,36 @@
     render() {
       const { hasTarget, clientName, originalUrl } = this._config;
 
-      // Dynamic Title & Description based on the single parameter
+      // Clean typographic hierarchy according to /frontend-design
       const titleHtml = hasTarget
-        ? `Concept Redesign for <span class="dn-gradient">${clientName}</span>`
-        : `Websites engineered for <span class="dn-gradient">growth.</span>`;
+        ? `<div class="dn-eyebrow-label">Concept Redesign</div>
+           <h2 class="dn-title">${clientName}</h2>`
+        : `<h2 class="dn-title dn-title-studio">Websites engineered for <span class="dn-gradient">growth.</span></h2>`;
 
       const descHtml = hasTarget
-        ? `Crafted by DotNif Studio — high-performance Next.js engineering, sub-second latency, and conversion-optimized architecture.`
+        ? `Architected by DotNif Studio — featuring high-performance Next.js infrastructure, sub-second latency, and conversion-focused UX.`
         : `Boutique web studio building fast Next.js, WordPress and high-conversion e-commerce systems.`;
 
-      // Dynamic Action Buttons
+      // Balanced action buttons (1-line guaranteed, balanced widths)
       let actionsHtml = "";
       if (hasTarget && originalUrl) {
         actionsHtml = `
           <a href="${originalUrl}" target="_blank" rel="noopener noreferrer" class="dn-btn dn-btn-white">
-            View Original Site
+            Original Site
             ${SVGS.externalLink}
           </a>
           <a href="${MASTER_CONFIG.studioDomain}" target="_blank" rel="noopener noreferrer" class="dn-btn dn-btn-blue">
-            Explore DotNif Studio
+            DotNif Studio
             ${SVGS.arrowRight}
           </a>
         `;
       } else {
         actionsHtml = `
           <a href="${MASTER_CONFIG.contactUrl}" target="_blank" rel="noopener noreferrer" class="dn-btn dn-btn-white">
-            Book a call
+            Book a Call
           </a>
           <a href="${MASTER_CONFIG.workUrl}" target="_blank" rel="noopener noreferrer" class="dn-btn dn-btn-blue">
-            See our work
+            Our Portfolio
             ${SVGS.arrowRight}
           </a>
         `;
@@ -327,7 +358,7 @@
             pointer-events: auto;
           }
 
-          /* Luxury Modal Card */
+          /* Luxury Modal Card Centered Wrapper */
           .dn-card-wrapper {
             position: fixed;
             inset: 0;
@@ -340,22 +371,23 @@
           }
 
           .dn-card {
+            position: relative;
             width: 100%;
-            max-width: 380px;
-            border-radius: 24px;
+            max-width: 390px;
+            border-radius: 28px;
             padding: 1px;
             background: linear-gradient(155deg, rgba(110, 170, 255, 0.75), rgba(255, 255, 255, 0.08) 38%, rgba(60, 110, 255, 0.5));
             box-shadow: 0 32px 70px -14px rgba(25, 60, 200, 0.65), 0 4px 14px rgba(0, 0, 0, 0.4);
             opacity: 0;
-            transform: scale(0.85) translateY(24px);
+            transform: scale(0.94);
             visibility: hidden;
             pointer-events: none;
-            transition: opacity 0.35s ease, transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1), visibility 0.35s;
+            transition: opacity 0.35s ease, transform 0.45s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.35s;
           }
 
           .dn-card.is-open {
             opacity: 1;
-            transform: scale(1) translateY(0);
+            transform: scale(1);
             visibility: visible;
             pointer-events: auto;
           }
@@ -363,8 +395,9 @@
           .dn-card-inner {
             position: relative;
             overflow: hidden;
-            border-radius: 23px;
-            padding: 56px 26px 26px;
+            border-radius: 27px;
+            /* 68px top padding guarantees 32px of clear breathing space below the perched orb */
+            padding: 68px 26px 26px;
             text-align: center;
             background: radial-gradient(130% 70% at 50% 0%, rgba(47, 107, 255, 0.45), rgba(47, 107, 255, 0) 65%),
                         radial-gradient(90% 60% at 0% 100%, rgba(51, 214, 255, 0.14), rgba(51, 214, 255, 0) 60%),
@@ -372,25 +405,40 @@
             color: #FFFFFF;
           }
 
+          /* Ambient backlight behind the crowned orb */
+          .dn-card-crown-glow {
+            position: absolute;
+            top: -30px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 150px;
+            height: 90px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(51, 210, 255, 0.3) 0%, rgba(67, 100, 255, 0.12) 50%, transparent 70%);
+            pointer-events: none;
+            filter: blur(14px);
+          }
+
           /* Close button */
           .dn-close-btn {
             position: absolute;
-            top: 14px;
-            right: 14px;
+            top: 16px;
+            right: 16px;
             width: 32px;
             height: 32px;
             border-radius: 50%;
             border: 1px solid rgba(255, 255, 255, 0.1);
-            background: rgba(255, 255, 255, 0.07);
-            color: #c7d2f5;
+            background: rgba(255, 255, 255, 0.06);
+            color: #AAB5D8;
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
             transition: background 0.15s ease, transform 0.15s ease, color 0.15s ease;
+            z-index: 5;
           }
           .dn-close-btn:hover {
-            background: rgba(255, 255, 255, 0.16);
+            background: rgba(255, 255, 255, 0.14);
             color: #FFFFFF;
             transform: scale(1.05);
           }
@@ -398,51 +446,73 @@
             transform: scale(0.92);
           }
 
-          /* Header Brand Title */
-          .dn-brand {
-            display: flex;
+          /* Balanced metadata bar (Pill badge + Status) */
+          .dn-meta-bar {
+            display: inline-flex;
             align-items: center;
-            justify-content: center;
             gap: 8px;
+            margin-bottom: 12px;
+          }
+
+          .dn-brand-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 10px 4px 8px;
+            border-radius: 999px;
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.12);
             font-family: 'Space Grotesk', system-ui, sans-serif;
-            font-size: 13px;
+            font-size: 11px;
             font-weight: 700;
-            letter-spacing: 0.24em;
+            letter-spacing: 0.12em;
             color: #C7D2F5;
             text-transform: uppercase;
           }
 
-          /* Status pill */
           .dn-status-badge {
             display: inline-flex;
             align-items: center;
-            gap: 8px;
-            margin-top: 12px;
-            padding: 5px 12px 5px 10px;
+            gap: 6px;
+            padding: 4px 10px;
             border-radius: 999px;
-            background: rgba(255, 255, 255, 0.06);
-            border: 1px solid rgba(255, 255, 255, 0.12);
-            font-size: 11.5px;
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid rgba(16, 185, 129, 0.22);
+            font-size: 11px;
             font-weight: 500;
-            color: #C7D2F5;
+            color: #34D399;
           }
 
           .dn-status-dot {
-            width: 7px;
-            height: 7px;
+            width: 6px;
+            height: 6px;
             border-radius: 50%;
             background: #10B981;
             animation: dnPulse 2.2s infinite;
           }
 
-          /* Headline */
-          .dn-title {
-            margin: 14px 0 0;
-            font-family: 'Space Grotesk', system-ui, sans-serif;
-            font-size: 26px;
-            line-height: 1.15;
+          /* Typography & Hierarchy */
+          .dn-eyebrow-label {
+            font-size: 12px;
             font-weight: 600;
-            letter-spacing: -0.01em;
+            text-transform: uppercase;
+            letter-spacing: 0.12em;
+            color: #8E94A5;
+            margin-bottom: 2px;
+          }
+
+          .dn-title {
+            font-family: 'Space Grotesk', system-ui, sans-serif;
+            font-size: 27px;
+            line-height: 1.15;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+            color: #FFFFFF;
+          }
+
+          .dn-title-studio {
+            font-size: 24px;
+            font-weight: 600;
           }
 
           .dn-gradient {
@@ -480,7 +550,7 @@
             letter-spacing: 0.02em;
           }
 
-          /* Action Buttons */
+          /* Action Buttons: Guaranteed 1-line balanced layout */
           .dn-actions {
             display: flex;
             gap: 10px;
@@ -489,15 +559,17 @@
 
           .dn-btn {
             flex: 1;
-            min-height: 44px;
-            display: flex;
+            height: 44px;
+            display: inline-flex;
             align-items: center;
             justify-content: center;
             gap: 6px;
             border-radius: 999px;
-            font-size: 13.5px;
+            font-size: 13px;
             font-weight: 600;
             text-decoration: none;
+            white-space: nowrap;
+            padding: 0 14px;
             cursor: pointer;
             transition: transform 0.15s ease, box-shadow 0.15s ease, filter 0.15s ease;
           }
@@ -565,7 +637,7 @@
           .dn-orb-trigger.is-open {
             width: 72px;
             height: 72px;
-            /* Coordinate set dynamically by JS based on card rect */
+            /* Coordinates set mathematically by positionOrbOnCard() */
           }
 
           .dn-orb-trigger:hover {
@@ -646,22 +718,24 @@
         <!-- Center Card Container -->
         <div class="dn-card-wrapper">
           <aside class="dn-card" id="dnCard" aria-label="DOTNIF web studio redesign">
+            <div class="dn-card-crown-glow"></div>
             <div class="dn-card-inner">
               <button type="button" class="dn-close-btn" id="dnCloseBtn" aria-label="Close modal">
                 ${SVGS.close}
               </button>
 
-              <div class="dn-brand">
-                ${SVGS.logo}
-                ${MASTER_CONFIG.brandName}
+              <div class="dn-meta-bar">
+                <div class="dn-brand-pill">
+                  ${SVGS.logo}
+                  <span>${MASTER_CONFIG.brandName}</span>
+                </div>
+                <div class="dn-status-badge">
+                  <span class="dn-status-dot"></span>
+                  Taking projects
+                </div>
               </div>
 
-              <div class="dn-status-badge">
-                <span class="dn-status-dot"></span>
-                Taking new projects
-              </div>
-
-              <h2 class="dn-title">${titleHtml}</h2>
+              ${titleHtml}
               <p class="dn-desc">${descHtml}</p>
 
               <div class="dn-tags">
@@ -751,7 +825,10 @@
       this.$orb.classList.add("is-open");
       this.$orb.setAttribute("aria-expanded", "true");
 
-      // Give card a brief tick to layout, then anchor orb
+      // Position immediately with static layout metrics
+      this.positionOrbOnCard();
+
+      // And ensure perfect positioning on next frame
       requestAnimationFrame(() => {
         this.positionOrbOnCard();
       });
@@ -769,7 +846,7 @@
       this.$orb.classList.add("is-closed");
       this.$orb.setAttribute("aria-expanded", "false");
 
-      // Reset inline coordinates so CSS puts it back at bottom right
+      // Reset inline coordinates so CSS returns it to bottom right
       this.$orb.style.left = "";
       this.$orb.style.top = "";
       this.$orb.style.right = "";
@@ -782,11 +859,16 @@
 
     positionOrbOnCard() {
       if (!this.$card || !this.$orb) return;
-      const cardRect = this.$card.getBoundingClientRect();
-      // Center horizontally on card, half overlapping the top edge
+      // Untransformed static layout metrics (immune to CSS scale/translate animations)
+      const cardW = this.$card.offsetWidth;
+      const cardH = this.$card.offsetHeight;
+      const cardLeft = (window.innerWidth - cardW) / 2;
+      const cardTop = (window.innerHeight - cardH) / 2;
+
       const orbSize = 72;
-      const targetLeft = cardRect.left + (cardRect.width - orbSize) / 2;
-      const targetTop = cardRect.top - orbSize / 2;
+      const targetLeft = cardLeft + (cardW - orbSize) / 2;
+      // Perch cleanly half above the card edge, half into the crown pedestal
+      const targetTop = cardTop - orbSize / 2;
 
       this.$orb.style.left = `${Math.round(targetLeft)}px`;
       this.$orb.style.top = `${Math.round(targetTop)}px`;
@@ -801,7 +883,7 @@
       setTimeout(() => { this._blinkTarget = 0; }, 160);
     }
 
-    /* ── 7. WEBGL ENGINE INITIALIZATION ── */
+    /* ── 8. WEBGL ENGINE INITIALIZATION ── */
     initWebGL() {
       const gl = this.$canvas.getContext("webgl", { alpha: true, antialias: true });
       if (!gl) {
