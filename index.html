@@ -3,21 +3,344 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <title>DotNif Studio</title>
+  <title>DotNif Studio — Concept Redesign Preview</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #090A0F;
+      --surface: #0D0F18;
+      --border: rgba(255,255,255,0.06);
+      --text: #E8EAF2;
+      --muted: #3A3F55;
+      --muted2: #252836;
+      --accent: #33D2FF;
+    }
+
     html, body {
       width: 100%;
-      height: 100%;
-      background: #090A0F;
+      min-height: 100vh;
+      background: var(--bg);
+      font-family: 'Inter', system-ui, sans-serif;
+      color: var(--text);
+      overflow-x: hidden;
+    }
+
+    /* ── NAV ── */
+    nav {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      height: 60px;
+      background: rgba(9,10,15,0.8);
+      backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 32px;
+      z-index: 10;
+    }
+
+    .nav-logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .nav-logo-mark {
+      width: 28px;
+      height: 28px;
+      border-radius: 8px;
+      background: var(--muted2);
+    }
+
+    .nav-logo-text {
+      width: 80px;
+      height: 10px;
+      border-radius: 5px;
+      background: var(--muted);
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 28px;
+    }
+
+    .nav-link {
+      width: 48px;
+      height: 8px;
+      border-radius: 4px;
+      background: var(--muted);
+      opacity: 0.5;
+    }
+
+    .nav-cta {
+      width: 90px;
+      height: 32px;
+      border-radius: 999px;
+      background: var(--muted2);
+      border: 1px solid var(--border);
+    }
+
+    /* ── HERO ── */
+    .hero {
+      padding-top: 140px;
+      padding-bottom: 80px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      gap: 20px;
+      position: relative;
+    }
+
+    .hero::before {
+      content: '';
+      position: absolute;
+      top: 60px; left: 50%;
+      transform: translateX(-50%);
+      width: 600px;
+      height: 300px;
+      border-radius: 50%;
+      background: radial-gradient(ellipse, rgba(51,210,255,0.04) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    .hero-eyebrow {
+      width: 120px;
+      height: 26px;
+      border-radius: 999px;
+      background: var(--muted2);
+      border: 1px solid var(--border);
+    }
+
+    .hero-h1-a {
+      width: 480px;
+      max-width: 90vw;
+      height: 20px;
+      border-radius: 6px;
+      background: var(--muted);
+      opacity: 0.5;
+    }
+
+    .hero-h1-b {
+      width: 340px;
+      max-width: 80vw;
+      height: 20px;
+      border-radius: 6px;
+      background: var(--muted);
+      opacity: 0.3;
+    }
+
+    .hero-sub-a {
+      width: 360px;
+      max-width: 85vw;
+      height: 11px;
+      border-radius: 5px;
+      background: var(--muted2);
+    }
+
+    .hero-sub-b {
+      width: 290px;
+      max-width: 80vw;
+      height: 11px;
+      border-radius: 5px;
+      background: var(--muted2);
+      opacity: 0.7;
+    }
+
+    .hero-btns {
+      display: flex;
+      gap: 12px;
+      margin-top: 8px;
+    }
+
+    .hero-btn-primary {
+      width: 130px;
+      height: 44px;
+      border-radius: 999px;
+      background: var(--muted2);
+      border: 1px solid var(--border);
+    }
+
+    .hero-btn-secondary {
+      width: 110px;
+      height: 44px;
+      border-radius: 999px;
+      background: transparent;
+      border: 1px solid var(--border);
+    }
+
+    /* ── CARDS GRID ── */
+    .cards {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 0 24px 100px;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 18px;
+    }
+
+    @media (max-width: 768px) {
+      .cards { grid-template-columns: 1fr; }
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .card-thumb {
+      width: 100%;
+      aspect-ratio: 16/9;
+      border-radius: 10px;
+      background: var(--muted2);
+    }
+
+    .card-tag {
+      width: 56px;
+      height: 20px;
+      border-radius: 999px;
+      background: var(--muted2);
+    }
+
+    .card-title-a {
+      width: 80%;
+      height: 11px;
+      border-radius: 5px;
+      background: var(--muted);
+      opacity: 0.4;
+    }
+
+    .card-title-b {
+      width: 60%;
+      height: 11px;
+      border-radius: 5px;
+      background: var(--muted);
+      opacity: 0.25;
+    }
+
+    .card-desc-a {
+      width: 100%;
+      height: 9px;
+      border-radius: 4px;
+      background: var(--muted2);
+    }
+
+    .card-desc-b {
+      width: 85%;
+      height: 9px;
+      border-radius: 4px;
+      background: var(--muted2);
+      opacity: 0.6;
+    }
+
+    .card-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: 4px;
+    }
+
+    .card-avatar {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: var(--muted2);
+    }
+
+    .card-link {
+      width: 60px;
+      height: 8px;
+      border-radius: 4px;
+      background: var(--muted2);
     }
   </style>
 </head>
 <body>
+
+  <!-- Skeleton nav -->
+  <nav>
+    <div class="nav-logo">
+      <div class="nav-logo-mark"></div>
+      <div class="nav-logo-text"></div>
+    </div>
+    <div class="nav-links">
+      <div class="nav-link"></div>
+      <div class="nav-link"></div>
+      <div class="nav-link"></div>
+      <div class="nav-link"></div>
+    </div>
+    <div class="nav-cta"></div>
+  </nav>
+
+  <!-- Skeleton hero -->
+  <section class="hero">
+    <div class="hero-eyebrow"></div>
+    <div class="hero-h1-a"></div>
+    <div class="hero-h1-b"></div>
+    <div class="hero-sub-a"></div>
+    <div class="hero-sub-b"></div>
+    <div class="hero-btns">
+      <div class="hero-btn-primary"></div>
+      <div class="hero-btn-secondary"></div>
+    </div>
+  </section>
+
+  <!-- Skeleton cards -->
+  <div class="cards">
+    <div class="card">
+      <div class="card-thumb"></div>
+      <div class="card-tag"></div>
+      <div class="card-title-a"></div>
+      <div class="card-title-b"></div>
+      <div class="card-desc-a"></div>
+      <div class="card-desc-b"></div>
+      <div class="card-footer">
+        <div class="card-avatar"></div>
+        <div class="card-link"></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-thumb"></div>
+      <div class="card-tag"></div>
+      <div class="card-title-a"></div>
+      <div class="card-title-b"></div>
+      <div class="card-desc-a"></div>
+      <div class="card-desc-b"></div>
+      <div class="card-footer">
+        <div class="card-avatar"></div>
+        <div class="card-link"></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-thumb"></div>
+      <div class="card-tag"></div>
+      <div class="card-title-a"></div>
+      <div class="card-title-b"></div>
+      <div class="card-desc-a"></div>
+      <div class="card-desc-b"></div>
+      <div class="card-footer">
+        <div class="card-avatar"></div>
+        <div class="card-link"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DotNif Banner -->
   <script src="./banner.js"
           data-name="Zero Lifestyle"
           data-title="Concept Redesign"
           data-original="https://zerolifestyle.co"
           async></script>
+
 </body>
 </html>
