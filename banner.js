@@ -541,14 +541,14 @@
           /* Close Timer Ring — SVG arc around the close button */
           .dn-close-btn-wrap {
             position: absolute;
-            top: 12px;
-            right: 12px;
+            top: 13px;
+            right: 13px;
             width: 42px;
             height: 42px;
             display: flex;
             align-items: center;
             justify-content: center;
-            z-index: 5;
+            z-index: 6;
           }
 
           .dn-timer-ring {
@@ -924,25 +924,27 @@
         <div class="dn-card-wrapper">
           <aside class="dn-card ${this._isOpen ? 'is-open' : ''}" id="dnCard" aria-label="DOTNIF web studio redesign">
             <div class="dn-card-crown-glow"></div>
-            <div class="dn-card-inner">
-              <!-- Close button with circular timer ring -->
-              <div class="dn-close-btn-wrap" id="dnCloseBtnWrap">
-                <!-- SVG ring: r=19 → circumference≈119.38 -->
-                <svg class="dn-timer-ring" id="dnTimerRing" viewBox="0 0 42 42" aria-hidden="true">
-                  <defs>
-                    <linearGradient id="dnTimerGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-                      <stop offset="0%" stop-color="#33D2FF"/>
-                      <stop offset="100%" stop-color="#4364FF"/>
-                    </linearGradient>
-                  </defs>
-                  <circle class="dn-timer-ring-track" cx="21" cy="21" r="19"/>
-                  <circle class="dn-timer-ring-fill" id="dnTimerFill" cx="21" cy="21" r="19"/>
-                </svg>
-                <button type="button" class="dn-close-btn" id="dnCloseBtn" aria-label="Close modal">
-                  ${SVGS.close}
-                </button>
-              </div>
 
+            <!-- Close button with circular timer ring — lives on .dn-card, NOT inside .dn-card-inner,
+                 so overflow:hidden on the inner never clips the SVG arc -->
+            <div class="dn-close-btn-wrap" id="dnCloseBtnWrap">
+              <!-- SVG ring: r=19 → circumference≈119.38 -->
+              <svg class="dn-timer-ring" id="dnTimerRing" viewBox="0 0 42 42" aria-hidden="true">
+                <defs>
+                  <linearGradient id="dnTimerGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                    <stop offset="0%" stop-color="#33D2FF"/>
+                    <stop offset="100%" stop-color="#4364FF"/>
+                  </linearGradient>
+                </defs>
+                <circle class="dn-timer-ring-track" cx="21" cy="21" r="19"/>
+                <circle class="dn-timer-ring-fill" id="dnTimerFill" cx="21" cy="21" r="19"/>
+              </svg>
+              <button type="button" class="dn-close-btn" id="dnCloseBtn" aria-label="Close modal">
+                ${SVGS.close}
+              </button>
+            </div>
+
+            <div class="dn-card-inner">
               <div class="dn-meta-bar">
                 <div class="dn-brand-pill">
                   ${SVGS.logo}

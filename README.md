@@ -4,6 +4,9 @@ A centralized, luxury dark-tech concept redesign card and interactive WebGL Live
 
 Paste one line into any client website, and control design, messaging, and destination URLs across all concept sites from this single GitHub repository.
 
+**Live Playground:** https://muhammad-awais-web-dev.github.io/dotnif-banner/
+**Script CDN URL:** `https://muhammad-awais-web-dev.github.io/dotnif-banner/banner.js`
+
 ---
 
 ## 1. Quick Start & Content Modes
