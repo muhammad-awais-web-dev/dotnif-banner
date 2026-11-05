@@ -548,6 +548,7 @@
             display: flex;
             align-items: center;
             justify-content: center;
+            overflow: visible;
             z-index: 6;
           }
 
@@ -577,7 +578,6 @@
             /* r=19, circumference = 2π×19 ≈ 119.38 */
             stroke-dasharray: 119.38;
             stroke-dashoffset: 0;
-            filter: drop-shadow(0 0 3px rgba(51, 210, 255, 0.95));
           }
 
           .dn-card.has-timer .dn-timer-ring {
@@ -591,7 +591,6 @@
           .dn-card.timer-paused .dn-timer-ring-fill {
             animation-play-state: paused;
             stroke: #4FFFFF;
-            filter: drop-shadow(0 0 5px rgba(51, 210, 255, 1));
           }
 
           @keyframes dnRingDrain {
