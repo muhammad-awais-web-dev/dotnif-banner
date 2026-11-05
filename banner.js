@@ -538,49 +538,65 @@
             pointer-events: auto;
           }
 
-          /* Close Timer Progress Bar (Active only during first default open) */
-          .dn-timer-track {
+          /* Close Timer Ring — SVG arc around the close button */
+          .dn-close-btn-wrap {
             position: absolute;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            height: 3px;
-            background: rgba(255, 255, 255, 0.05);
-            pointer-events: none;
-            opacity: 0;
-            transition: opacity 0.35s ease;
-            z-index: 6;
+            top: 12px;
+            right: 12px;
+            width: 42px;
+            height: 42px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 5;
           }
 
-          .dn-card.has-timer .dn-timer-track {
+          .dn-timer-ring {
+            position: absolute;
+            inset: 0;
+            width: 42px;
+            height: 42px;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.4s ease;
+            /* Start arc from 12 o'clock (top) */
+            transform: rotate(-90deg);
+          }
+
+          .dn-timer-ring-track {
+            fill: none;
+            stroke: rgba(255, 255, 255, 0.08);
+            stroke-width: 2;
+          }
+
+          .dn-timer-ring-fill {
+            fill: none;
+            stroke: #33D2FF;
+            stroke-width: 2.5;
+            stroke-linecap: round;
+            /* r=19, circumference = 2π×19 ≈ 119.38 */
+            stroke-dasharray: 119.38;
+            stroke-dashoffset: 0;
+            filter: drop-shadow(0 0 3px rgba(51, 210, 255, 0.95));
+          }
+
+          .dn-card.has-timer .dn-timer-ring {
             opacity: 1;
           }
 
-          .dn-timer-fill {
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(90deg, #33D2FF, #4364FF);
-            box-shadow: 0 0 10px rgba(51, 210, 255, 0.8), 0 0 18px rgba(67, 100, 255, 0.4);
-            transform-origin: left center;
-            transform: scaleX(1);
+          .dn-card.timer-running .dn-timer-ring-fill {
+            animation: dnRingDrain var(--timer-duration, 7000ms) linear forwards;
           }
 
-          .dn-card.timer-running .dn-timer-fill {
-            animation: dnTimerDrain var(--timer-duration, 7000ms) linear forwards;
-          }
-
-          .dn-card.timer-paused .dn-timer-fill {
+          .dn-card.timer-paused .dn-timer-ring-fill {
             animation-play-state: paused;
-            filter: brightness(1.25);
+            stroke: #4FFFFF;
+            filter: drop-shadow(0 0 5px rgba(51, 210, 255, 1));
           }
 
-          @keyframes dnTimerDrain {
-            from {
-              transform: scaleX(1);
-            }
-            to {
-              transform: scaleX(0);
-            }
+          @keyframes dnRingDrain {
+            from { stroke-dashoffset: 0; }
+            to   { stroke-dashoffset: 119.38; }
           }
 
           .dn-card-inner {
@@ -610,11 +626,9 @@
             filter: blur(14px);
           }
 
-          /* Close button */
+          /* Close button — sits inside the wrap, ring takes border role */
           .dn-close-btn {
-            position: absolute;
-            top: 16px;
-            right: 16px;
+            position: relative;
             width: 32px;
             height: 32px;
             border-radius: 50%;
@@ -625,8 +639,8 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            transition: background 0.15s ease, transform 0.15s ease, color 0.15s ease;
-            z-index: 5;
+            transition: background 0.15s ease, transform 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+            z-index: 1;
           }
           .dn-close-btn:hover {
             background: rgba(255, 255, 255, 0.14);
@@ -911,9 +925,23 @@
           <aside class="dn-card ${this._isOpen ? 'is-open' : ''}" id="dnCard" aria-label="DOTNIF web studio redesign">
             <div class="dn-card-crown-glow"></div>
             <div class="dn-card-inner">
-              <button type="button" class="dn-close-btn" id="dnCloseBtn" aria-label="Close modal">
-                ${SVGS.close}
-              </button>
+              <!-- Close button with circular timer ring -->
+              <div class="dn-close-btn-wrap" id="dnCloseBtnWrap">
+                <!-- SVG ring: r=19 → circumference≈119.38 -->
+                <svg class="dn-timer-ring" id="dnTimerRing" viewBox="0 0 42 42" aria-hidden="true">
+                  <defs>
+                    <linearGradient id="dnTimerGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                      <stop offset="0%" stop-color="#33D2FF"/>
+                      <stop offset="100%" stop-color="#4364FF"/>
+                    </linearGradient>
+                  </defs>
+                  <circle class="dn-timer-ring-track" cx="21" cy="21" r="19"/>
+                  <circle class="dn-timer-ring-fill" id="dnTimerFill" cx="21" cy="21" r="19"/>
+                </svg>
+                <button type="button" class="dn-close-btn" id="dnCloseBtn" aria-label="Close modal">
+                  ${SVGS.close}
+                </button>
+              </div>
 
               <div class="dn-meta-bar">
                 <div class="dn-brand-pill">
@@ -937,11 +965,6 @@
               <div class="dn-actions">
                 ${actionsHtml}
               </div>
-
-              <!-- Close Timer Progress Bar (Active on first default open) -->
-              <div class="dn-timer-track" id="dnTimerTrack" title="Auto-closing... Hover to pause">
-                <div class="dn-timer-fill" id="dnTimerFill"></div>
-              </div>
             </div>
           </aside>
         </div>
@@ -956,7 +979,7 @@
       this.$backdrop = this.shadowRoot.getElementById("dnBackdrop");
       this.$card = this.shadowRoot.getElementById("dnCard");
       this.$closeBtn = this.shadowRoot.getElementById("dnCloseBtn");
-      this.$timerTrack = this.shadowRoot.getElementById("dnTimerTrack");
+      this.$timerRing = this.shadowRoot.getElementById("dnTimerRing");
       this.$timerFill = this.shadowRoot.getElementById("dnTimerFill");
       this.$orb = this.shadowRoot.getElementById("dnOrb");
       this.$canvas = this.shadowRoot.getElementById("dnCanvas");
@@ -1091,10 +1114,10 @@
       this._timerRemaining = durationMs;
       this._timerStartedAt = Date.now();
 
-      // Reset timer fill CSS animation cleanly
+      // Reset SVG ring animation cleanly via reflow
       if (this.$timerFill) {
         this.$timerFill.style.animation = "none";
-        void this.$timerFill.offsetWidth; // Trigger reflow
+        void this.$timerFill.getBoundingClientRect(); // Trigger reflow for SVG
         this.$timerFill.style.animation = "";
       }
 
@@ -1141,6 +1164,11 @@
       if (this.$card) {
         this.$card.classList.remove("has-timer", "timer-running", "timer-paused");
         this.$card.style.removeProperty("--timer-duration");
+      }
+      // Reset ring arc to full so it's clean on next open
+      if (this.$timerFill) {
+        this.$timerFill.style.animation = "none";
+        this.$timerFill.style.strokeDashoffset = "0";
       }
     }
 
