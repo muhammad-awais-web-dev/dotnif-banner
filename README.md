@@ -66,16 +66,20 @@ For pure studio showcases, general portfolio outreach, or minimal presentation:
 
 ---
 
-## 2. Animated Open / Close Lifecycle & Auto-Close Timer
+## 2. Animated Open / Close Lifecycle & Close Timer Process
 
-- **Page-Load Auto-Open**: 450ms after the host page loads, the widget executes an animated entry:
+- **First Default Open on Page Load**: 450ms after the host page loads, the widget executes an animated entry:
   - The ambient radial backdrop fades in.
   - The luxury glass card springs into the viewport center (`scale: 0.92 -> 1, translateY: 12px -> 0`).
   - The Live Orb glides from the bottom-right corner (`60px`) to crown the card (`72px`) with Apple-like spring cubic-bezier elasticity.
-- **Auto-Close Timeout**: On initial page load, the card automatically closes after **7 seconds** (configurable via `data-auto-close="7000"`, or disabled with `data-auto-open="false"`).
-- **Engagement Pause**: If the visitor hovers over or clicks anywhere inside the card, the auto-close timer is immediately cancelled so they can read and interact undisturbed.
-- **Animated Closing**: When closing, the card smoothly scales down and fades out, while the Live Orb glides gracefully back down to its parked position at `bottom: 24px, right: 24px`, where its emerald radar beacon activates.
-- **Re-Open On Demand**: Clicking the parked orb at any time re-animates the card open.
+- **Visual Close Timer Process (Progress Track)**:
+  - An ultra-refined, glowing cyan-to-blue hairline progress bar (`3px`) runs along the bottom curved chassis of the card.
+  - Automatically drains linearly over **7 seconds** (configurable via `data-auto-close="7000"`, or disabled with `data-auto-open="false"`).
+  - **Interactive Pause on Hover**: When the visitor moves their mouse over the card, the timer freezes instantly in place with tactile brightness feedback (`timer-paused`).
+  - **Resume on Unhover**: If the mouse leaves the card, the countdown resumes seamlessly from the exact remaining millisecond.
+  - **Permanent Dismiss on Click**: Clicking anywhere inside the card (or interacting with links/buttons) permanently cancels the auto-close process and fades out the timer bar.
+- **Animated Closing**: If untouched when the timer drains to 0, the card smoothly scales down and fades out, while the Live Orb glides gracefully back down to its parked position at `bottom: 24px, right: 24px`, where its emerald radar beacon activates.
+- **Manual Re-Open Stays Open**: Clicking the parked orb at any time re-opens the card permanently without any timer or countdown bar.
 
 ---
 

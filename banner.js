@@ -293,7 +293,9 @@
         "data-type",
         "data-client",
         "data-name",
-        "data-title"
+        "data-title",
+        "data-auto-open",
+        "data-auto-close"
       ];
     }
 
@@ -316,12 +318,20 @@
 
     attributeChangedCallback(name, oldVal, newVal) {
       if (oldVal !== newVal && this.isConnected) {
+        const wasOpen = this._isOpen;
+        const hadTimer = this._timerRunning;
+        const remaining = this._timerRemaining;
+
         this._config = parseConfig(this);
         this.render();
         this.initWebGL();
         this.bindEvents();
-        if (this._isOpen) {
+
+        if (wasOpen) {
           this.positionOrbOnCard();
+          if (hadTimer && remaining > 0) {
+            this.startTimerProcess(remaining);
+          }
         }
       }
     }
@@ -332,19 +342,24 @@
       this.initWebGL();
       this.bindEvents();
 
-      // Initial Auto-Open on page load with animated entrance & auto-close timer
-      const autoOpen = this.getAttribute("data-auto-open") !== "false";
-      if (autoOpen) {
-        setTimeout(() => {
-          this.open();
+      // Initial Auto-Open on page load with animated entrance & close timer process
+      const autoOpenAttr = (this.getAttribute("data-auto-open") || "true").toLowerCase().trim();
+      const isAutoOpenDisabled = autoOpenAttr === "false";
+      let shouldAutoOpen = !isAutoOpenDisabled;
 
-          // Auto-close timeout on initial open (default 7 seconds, customizable)
-          const delay = parseInt(this.getAttribute("data-auto-close"), 10) || 7000;
-          this._autoCloseTimer = setTimeout(() => {
-            if (this._isOpen) {
-              this.close();
-            }
-          }, delay);
+      if (autoOpenAttr === "once") {
+        try {
+          if (sessionStorage.getItem("dotnif_banner_auto_opened")) {
+            shouldAutoOpen = false;
+          } else {
+            sessionStorage.setItem("dotnif_banner_auto_opened", "true");
+          }
+        } catch (_) {}
+      }
+
+      if (shouldAutoOpen) {
+        setTimeout(() => {
+          this.open({ isDefault: true });
         }, 450);
       }
     }
@@ -521,6 +536,51 @@
             transform: scale(1) translateY(0);
             visibility: visible;
             pointer-events: auto;
+          }
+
+          /* Close Timer Progress Bar (Active only during first default open) */
+          .dn-timer-track {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: rgba(255, 255, 255, 0.05);
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.35s ease;
+            z-index: 6;
+          }
+
+          .dn-card.has-timer .dn-timer-track {
+            opacity: 1;
+          }
+
+          .dn-timer-fill {
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, #33D2FF, #4364FF);
+            box-shadow: 0 0 10px rgba(51, 210, 255, 0.8), 0 0 18px rgba(67, 100, 255, 0.4);
+            transform-origin: left center;
+            transform: scaleX(1);
+          }
+
+          .dn-card.timer-running .dn-timer-fill {
+            animation: dnTimerDrain var(--timer-duration, 7000ms) linear forwards;
+          }
+
+          .dn-card.timer-paused .dn-timer-fill {
+            animation-play-state: paused;
+            filter: brightness(1.25);
+          }
+
+          @keyframes dnTimerDrain {
+            from {
+              transform: scaleX(1);
+            }
+            to {
+              transform: scaleX(0);
+            }
           }
 
           .dn-card-inner {
@@ -844,11 +904,11 @@
         </style>
 
         <!-- Ethereal Backdrop -->
-        <div class="dn-backdrop" id="dnBackdrop"></div>
+        <div class="dn-backdrop ${this._isOpen ? 'is-open' : ''}" id="dnBackdrop"></div>
 
         <!-- Center Card Container -->
         <div class="dn-card-wrapper">
-          <aside class="dn-card" id="dnCard" aria-label="DOTNIF web studio redesign">
+          <aside class="dn-card ${this._isOpen ? 'is-open' : ''}" id="dnCard" aria-label="DOTNIF web studio redesign">
             <div class="dn-card-crown-glow"></div>
             <div class="dn-card-inner">
               <button type="button" class="dn-close-btn" id="dnCloseBtn" aria-label="Close modal">
@@ -877,12 +937,17 @@
               <div class="dn-actions">
                 ${actionsHtml}
               </div>
+
+              <!-- Close Timer Progress Bar (Active on first default open) -->
+              <div class="dn-timer-track" id="dnTimerTrack" title="Auto-closing... Hover to pause">
+                <div class="dn-timer-fill" id="dnTimerFill"></div>
+              </div>
             </div>
           </aside>
         </div>
 
         <!-- The Interactive WebGL Live Orb -->
-        <button type="button" class="dn-orb-trigger is-closed" id="dnOrb" aria-label="DOTNIF orb: toggle studio card" aria-expanded="false">
+        <button type="button" class="dn-orb-trigger ${this._isOpen ? 'is-open' : 'is-closed'}" id="dnOrb" aria-label="DOTNIF orb: toggle studio card" aria-expanded="${this._isOpen ? 'true' : 'false'}">
           <canvas class="dn-canvas" id="dnCanvas" width="144" height="144"></canvas>
           <span class="dn-orb-beacon"></span>
         </button>
@@ -891,6 +956,8 @@
       this.$backdrop = this.shadowRoot.getElementById("dnBackdrop");
       this.$card = this.shadowRoot.getElementById("dnCard");
       this.$closeBtn = this.shadowRoot.getElementById("dnCloseBtn");
+      this.$timerTrack = this.shadowRoot.getElementById("dnTimerTrack");
+      this.$timerFill = this.shadowRoot.getElementById("dnTimerFill");
       this.$orb = this.shadowRoot.getElementById("dnOrb");
       this.$canvas = this.shadowRoot.getElementById("dnCanvas");
     }
@@ -910,15 +977,17 @@
       this.$closeBtn.addEventListener("click", () => this.close());
       this.$backdrop.addEventListener("click", () => this.close());
 
-      // Pause or cancel auto-close timer when user actively hovers or clicks the card
-      const cancelAutoClose = () => {
-        if (this._autoCloseTimer) {
-          clearTimeout(this._autoCloseTimer);
-          this._autoCloseTimer = null;
-        }
-      };
-      this.$card.addEventListener("mouseenter", cancelAutoClose);
-      this.$card.addEventListener("click", cancelAutoClose);
+      // Close timer process: hover pauses countdown, leave resumes countdown, click cancels timer
+      this.$card.addEventListener("mouseenter", () => {
+        this.pauseTimerProcess();
+      });
+      this.$card.addEventListener("mouseleave", () => {
+        this.resumeTimerProcess();
+      });
+      this.$card.addEventListener("click", (e) => {
+        if (e.target && e.target.closest && e.target.closest("#dnCloseBtn")) return;
+        this.cancelTimerProcess();
+      });
 
       // Global window tracking
       window.addEventListener("mousemove", this._onMouseMove, { passive: true });
@@ -963,11 +1032,8 @@
       }
     }
 
-    open() {
-      if (this._autoCloseTimer) {
-        clearTimeout(this._autoCloseTimer);
-        this._autoCloseTimer = null;
-      }
+    open({ isDefault = false } = {}) {
+      this.cancelTimerProcess();
 
       this._isOpen = true;
       this.$backdrop.classList.add("is-open");
@@ -987,13 +1053,16 @@
       // Spontaneous blink on open
       this._blinkTarget = 1;
       setTimeout(() => { this._blinkTarget = 0; }, 180);
+
+      // Close timer process: only active on first default open
+      if (isDefault) {
+        const delay = parseInt(this.getAttribute("data-auto-close"), 10) || 7000;
+        this.startTimerProcess(delay);
+      }
     }
 
     close() {
-      if (this._autoCloseTimer) {
-        clearTimeout(this._autoCloseTimer);
-        this._autoCloseTimer = null;
-      }
+      this.cancelTimerProcess();
 
       this._isOpen = false;
       this.$backdrop.classList.remove("is-open");
@@ -1011,6 +1080,68 @@
       // Quick blink on dismissal
       this._blinkTarget = 1;
       setTimeout(() => { this._blinkTarget = 0; }, 180);
+    }
+
+    /* ── CLOSE TIMER PROCESS FOR DEFAULT AUTO-OPEN ── */
+    startTimerProcess(durationMs = 7000) {
+      this.cancelTimerProcess();
+
+      this._timerRunning = true;
+      this._timerDuration = durationMs;
+      this._timerRemaining = durationMs;
+      this._timerStartedAt = Date.now();
+
+      // Reset timer fill CSS animation cleanly
+      if (this.$timerFill) {
+        this.$timerFill.style.animation = "none";
+        void this.$timerFill.offsetWidth; // Trigger reflow
+        this.$timerFill.style.animation = "";
+      }
+
+      this.$card.style.setProperty("--timer-duration", `${durationMs}ms`);
+      this.$card.classList.add("has-timer", "timer-running");
+      this.$card.classList.remove("timer-paused");
+
+      this._autoCloseTimer = setTimeout(() => {
+        if (this._isOpen) {
+          this.close();
+        }
+      }, durationMs);
+    }
+
+    pauseTimerProcess() {
+      if (!this._timerRunning || !this._isOpen) return;
+      if (this._autoCloseTimer) {
+        clearTimeout(this._autoCloseTimer);
+        this._autoCloseTimer = null;
+      }
+      const elapsed = Date.now() - this._timerStartedAt;
+      this._timerRemaining = Math.max(0, this._timerRemaining - elapsed);
+      this.$card.classList.add("timer-paused");
+    }
+
+    resumeTimerProcess() {
+      if (!this._timerRunning || !this._isOpen || this._timerRemaining <= 0) return;
+      this._timerStartedAt = Date.now();
+      this.$card.classList.remove("timer-paused");
+      this._autoCloseTimer = setTimeout(() => {
+        if (this._isOpen) {
+          this.close();
+        }
+      }, this._timerRemaining);
+    }
+
+    cancelTimerProcess() {
+      if (this._autoCloseTimer) {
+        clearTimeout(this._autoCloseTimer);
+        this._autoCloseTimer = null;
+      }
+      this._timerRunning = false;
+      this._timerRemaining = 0;
+      if (this.$card) {
+        this.$card.classList.remove("has-timer", "timer-running", "timer-paused");
+        this.$card.style.removeProperty("--timer-duration");
+      }
     }
 
     positionOrbOnCard() {
@@ -1145,6 +1276,17 @@
   function mount() {
     if (!document.querySelector("dotnif-redesign-banner")) {
       const el = document.createElement("dotnif-redesign-banner");
+      // Forward attributes from the invoking script tag
+      const scriptEl = document.querySelector("script[data-original], script[data-concept], script[data-mode], script[data-type], script[data-name], script[data-title], script[data-auto-close], script[data-auto-open], script[src*='banner.js']");
+      if (scriptEl) {
+        [
+          "data-original", "data-concept", "data-mode", "data-type",
+          "data-client", "data-name", "data-title", "data-auto-open", "data-auto-close"
+        ].forEach((attr) => {
+          const val = scriptEl.getAttribute(attr);
+          if (val !== null) el.setAttribute(attr, val);
+        });
+      }
       document.body.appendChild(el);
     }
   }
