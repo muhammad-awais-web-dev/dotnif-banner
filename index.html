@@ -311,8 +311,14 @@
       gap: 6px;
     }
 
+    .field-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
     .field label {
-      font-size: 12px;
+      font-size: 11.5px;
       font-weight: 600;
       color: var(--muted);
       text-transform: uppercase;
@@ -324,7 +330,7 @@
       background: rgba(0, 0, 0, 0.4);
       border: 1px solid var(--surface-border);
       border-radius: 10px;
-      padding: 12px 14px;
+      padding: 11px 13px;
       color: var(--text);
       font-family: var(--mono);
       font-size: 13px;
@@ -495,7 +501,7 @@
         </g>
       </svg>
       <span class="brand-title">DotNif Floating Card & Live Orb</span>
-      <span class="brand-tag">v2.1 Sandbox</span>
+      <span class="brand-tag">v2.2 Sandbox</span>
     </div>
     <div class="header-links">
       <a href="https://github.com/dotnif/dotnif-banner" target="_blank" rel="noopener noreferrer">GitHub Repository ↗</a>
@@ -553,8 +559,8 @@
       <!-- Controls -->
       <div class="control-box">
         <h3>
-          <span>Content Version</span>
-          <span style="font-size: 11px; font-weight: 500; color: var(--accent);">3 Modes Supported</span>
+          <span>Content Configuration</span>
+          <span style="font-size: 11px; font-weight: 500; color: var(--accent);">Live Sync</span>
         </h3>
 
         <!-- Mode Switcher Tabs -->
@@ -570,10 +576,22 @@
           <div class="presets-row" id="presets-row"></div>
         </div>
 
-        <!-- The Parameter Input -->
-        <div class="field" id="input-container">
-          <label for="cfg-input" id="input-label">Target URL or Client Name</label>
-          <input type="text" id="cfg-input" value="https://zerolifestyle.co" placeholder="e.g. https://zerolifestyle.co">
+        <!-- Two Dedicated Fields for Name & Title -->
+        <div class="field-row" id="row-name-title">
+          <div class="field">
+            <label for="cfg-name" id="label-name">Client Name</label>
+            <input type="text" id="cfg-name" value="Zero Lifestyle" placeholder="e.g. Zero Lifestyle">
+          </div>
+          <div class="field">
+            <label for="cfg-title" id="label-title">Card Title</label>
+            <input type="text" id="cfg-title" value="Concept Redesign" placeholder="e.g. Concept Redesign">
+          </div>
+        </div>
+
+        <!-- Original URL Field (Redesign Mode) -->
+        <div class="field" id="field-url-container">
+          <label for="cfg-url">Original Website URL (Optional)</label>
+          <input type="text" id="cfg-url" value="https://zerolifestyle.co" placeholder="e.g. https://zerolifestyle.co">
         </div>
 
         <!-- Interactive Testing Actions -->
@@ -622,15 +640,15 @@
           <p>Features corrected vertical & horizontal eye tracking with lerp physics, spontaneous organic blinks, and click-to-cycle chromatic states. Glides smoothly between bottom-right and the card crown.</p>
         </div>
         <div class="guide-card">
-          <h4>3. Three Tailored Content Modes</h4>
-          <p>Support for <b>Redesign Concept</b> (with before/after link), <b>New Concept</b> (for bespoke ground-up builds), and <b>Plain Simple Text</b> (for general agency outreach).</p>
+          <h4>3. Dedicated Name & Title Fields</h4>
+          <p>Full control over the brand name, custom title/eyebrow (e.g. <code>Concept Redesign</code>, <code>Next.js 16 Storefront</code>), and before/after website links.</p>
         </div>
       </div>
     </section>
   </main>
 
   <!-- Live Banner Script (Embeds Web Component) -->
-  <script src="./banner.js" data-original="https://zerolifestyle.co"></script>
+  <script src="./banner.js" data-name="Zero Lifestyle" data-title="Concept Redesign" data-original="https://zerolifestyle.co"></script>
 
   <script>
     let currentMode = 'redesign';
@@ -641,9 +659,15 @@
 
     const presetsContainer = document.getElementById('presets-container');
     const presetsRow = document.getElementById('presets-row');
-    const inputContainer = document.getElementById('input-container');
-    const inputLabel = document.getElementById('input-label');
-    const elInput = document.getElementById('cfg-input');
+
+    const rowNameTitle = document.getElementById('row-name-title');
+    const labelName = document.getElementById('label-name');
+    const labelTitle = document.getElementById('label-title');
+    const elName = document.getElementById('cfg-name');
+    const elTitle = document.getElementById('cfg-title');
+
+    const fieldUrlContainer = document.getElementById('field-url-container');
+    const elUrl = document.getElementById('cfg-url');
 
     const elSnippet = document.getElementById('code-snippet');
     const elMockUrl = document.getElementById('mock-url-label');
@@ -651,14 +675,14 @@
 
     const MODE_PRESETS = {
       redesign: [
-        { label: 'Zero Lifestyle', val: 'https://zerolifestyle.co', mock: 'https://zerolifestyle.concept.dotnif.com' },
-        { label: 'Daddu Charger', val: 'https://dadducharger.com', mock: 'https://daddu-charger.concept.dotnif.com' },
-        { label: 'Jan Franko', val: 'https://janfranko.com', mock: 'https://jan-franko.concept.dotnif.com' }
+        { name: 'Zero Lifestyle', title: 'Concept Redesign', url: 'https://zerolifestyle.co', mock: 'https://zerolifestyle.concept.dotnif.com' },
+        { name: 'Daddu Charger', title: 'Storefront Redesign', url: 'https://dadducharger.com', mock: 'https://daddu-charger.concept.dotnif.com' },
+        { name: 'Jan Franko', title: 'Luxury Portfolio Redesign', url: 'https://janfranko.com', mock: 'https://jan-franko.concept.dotnif.com' }
       ],
       new: [
-        { label: 'Avelo Carbon', val: 'Avelo Carbon', mock: 'https://avelo.concept.dotnif.com' },
-        { label: 'NextGen Storefront', val: 'NextGen Storefront', mock: 'https://nextgen.concept.dotnif.com' },
-        { label: 'Cyber Velocity', val: 'Cyber Velocity', mock: 'https://velocity.concept.dotnif.com' }
+        { name: 'Avelo Carbon', title: 'New Concept', url: '', mock: 'https://avelo.concept.dotnif.com' },
+        { name: 'NextGen Storefront', title: 'Flagship Build', url: '', mock: 'https://nextgen.concept.dotnif.com' },
+        { name: 'Cyber Velocity', title: 'Interactive Prototype', url: '', mock: 'https://velocity.concept.dotnif.com' }
       ],
       text: []
     };
@@ -669,24 +693,27 @@
 
       if (mode === 'redesign') {
         tabRedesign.classList.add('active');
-        inputContainer.style.display = 'flex';
+        rowNameTitle.style.display = 'grid';
         presetsContainer.style.display = 'flex';
-        inputLabel.textContent = 'Original Website URL or Brand Name';
-        elInput.placeholder = 'e.g. https://zerolifestyle.co';
+        fieldUrlContainer.style.display = 'flex';
+        labelName.textContent = 'Client Name';
+        labelTitle.textContent = 'Card Title';
         renderPresets(MODE_PRESETS.redesign);
         loadPreset(MODE_PRESETS.redesign[0]);
       } else if (mode === 'new') {
         tabNew.classList.add('active');
-        inputContainer.style.display = 'flex';
+        rowNameTitle.style.display = 'grid';
         presetsContainer.style.display = 'flex';
-        inputLabel.textContent = 'New Concept / Project Name';
-        elInput.placeholder = 'e.g. Avelo Carbon';
+        fieldUrlContainer.style.display = 'none';
+        labelName.textContent = 'Concept Name';
+        labelTitle.textContent = 'Card Title';
         renderPresets(MODE_PRESETS.new);
         loadPreset(MODE_PRESETS.new[0]);
       } else {
         tabText.classList.add('active');
-        inputContainer.style.display = 'none';
+        rowNameTitle.style.display = 'none';
         presetsContainer.style.display = 'none';
+        fieldUrlContainer.style.display = 'none';
         elMockUrl.textContent = 'https://preview.dotnif.com';
         updateBanner();
       }
@@ -698,14 +725,16 @@
         const btn = document.createElement('button');
         btn.type = 'button';
         btn.className = 'preset-pill';
-        btn.textContent = p.label;
+        btn.textContent = p.name;
         btn.onclick = () => loadPreset(p);
         presetsRow.appendChild(btn);
       });
     }
 
     function loadPreset(p) {
-      elInput.value = p.val;
+      elName.value = p.name;
+      elTitle.value = p.title;
+      if (elUrl) elUrl.value = p.url || '';
       elMockUrl.textContent = p.mock;
       updateBanner();
     }
@@ -719,26 +748,49 @@
       let snippet = '';
 
       if (currentMode === 'redesign') {
-        const val = elInput.value.trim() || 'https://zerolifestyle.co';
+        const nameVal = elName.value.trim() || 'Zero Lifestyle';
+        const titleVal = elTitle.value.trim() || 'Concept Redesign';
+        const urlVal = elUrl.value.trim();
+
         if (banner) {
           banner.removeAttribute('data-concept');
           banner.removeAttribute('data-mode');
-          banner.setAttribute('data-original', val);
+          banner.setAttribute('data-name', nameVal);
+          banner.setAttribute('data-title', titleVal);
+          if (urlVal) {
+            banner.setAttribute('data-original', urlVal);
+          } else {
+            banner.removeAttribute('data-original');
+          }
         }
-        snippet = `<script src="${repoUrl}" data-original="${val}" async><\/script>`;
+
+        let attrs = `data-name="${nameVal}"`;
+        if (titleVal !== 'Concept Redesign') attrs += ` data-title="${titleVal}"`;
+        if (urlVal) attrs += ` data-original="${urlVal}"`;
+        snippet = `<script src="${repoUrl}" ${attrs} async><\/script>`;
+
       } else if (currentMode === 'new') {
-        const val = elInput.value.trim() || 'Avelo Carbon';
+        const nameVal = elName.value.trim() || 'Avelo Carbon';
+        const titleVal = elTitle.value.trim() || 'New Concept';
+
         if (banner) {
           banner.removeAttribute('data-original');
           banner.removeAttribute('data-mode');
-          banner.setAttribute('data-concept', val);
+          banner.setAttribute('data-concept', nameVal);
+          banner.setAttribute('data-title', titleVal);
         }
-        snippet = `<script src="${repoUrl}" data-concept="${val}" async><\/script>`;
+
+        let attrs = `data-concept="${nameVal}"`;
+        if (titleVal !== 'New Concept') attrs += ` data-title="${titleVal}"`;
+        snippet = `<script src="${repoUrl}" ${attrs} async><\/script>`;
+
       } else {
         // Plain simple text
         if (banner) {
           banner.removeAttribute('data-original');
           banner.removeAttribute('data-concept');
+          banner.removeAttribute('data-name');
+          banner.removeAttribute('data-title');
           banner.setAttribute('data-mode', 'text');
         }
         snippet = `<script src="${repoUrl}" async><\/script>`;
@@ -771,7 +823,9 @@
       });
     }
 
-    elInput.addEventListener('input', updateBanner);
+    elName.addEventListener('input', updateBanner);
+    elTitle.addEventListener('input', updateBanner);
+    elUrl.addEventListener('input', updateBanner);
 
     // Initial setup
     window.addEventListener('DOMContentLoaded', () => {

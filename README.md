@@ -6,25 +6,36 @@ Paste one line into any client website, and control design, messaging, and desti
 
 ---
 
-## 1. Quick Start & Three Content Modes
+## 1. Quick Start & Content Modes
 
-The script accepts **only one optional parameter** depending on which content mode you need:
+The script supports 3 distinct content presentations:
 
-### Mode 1: Redesign Concept (URL or Client Name)
-For redesigns of existing brand websites. Displays the client name, concept badge, and includes the before/after original website comparison link:
+### Mode 1: Redesign Concept (Name, Title, & Original URL)
+For redesigns of existing brand websites. You have full control over the client brand name, redesign card title, and original comparison link:
 ```html
-<script src="https://<your-username>.github.io/dotnif-banner/banner.js" data-original="https://zerolifestyle.co" async></script>
+<script 
+  src="https://<your-username>.github.io/dotnif-banner/banner.js" 
+  data-name="Zero Lifestyle" 
+  data-title="Concept Redesign" 
+  data-original="https://zerolifestyle.co" 
+  async>
+</script>
 ```
-- **Eyebrow**: `CONCEPT REDESIGN`
-- **Headline**: `Zero Lifestyle`
-- **Actions**: `Original Site ↗` & `DotNif Studio ↗`
+- **Name Field** (`data-name`): `Zero Lifestyle`
+- **Title Field** (`data-title`): `Concept Redesign` (or `Storefront Re-Architecture`, `Next.js Redesign`, etc.)
+- **Original URL** (`data-original`): `https://zerolifestyle.co` (enables the `Original Site ↗` comparison button)
 
 ---
 
 ### Mode 2: New Concept Experience
 For brand-new concepts, flagship prototypes, or greenfield builds where there is no existing original site to link to:
 ```html
-<script src="https://<your-username>.github.io/dotnif-banner/banner.js" data-concept="Avelo Carbon" async></script>
+<script 
+  src="https://<your-username>.github.io/dotnif-banner/banner.js" 
+  data-concept="Avelo Carbon" 
+  data-title="New Concept" 
+  async>
+</script>
 ```
 - **Eyebrow**: `NEW CONCEPT`
 - **Headline**: `Avelo Carbon`
@@ -45,7 +56,12 @@ For pure studio showcases, general portfolio outreach, or minimal presentation:
 
 ### Alternatively via jsDelivr CDN
 ```html
-<script src="https://cdn.jsdelivr.net/gh/<your-username>/dotnif-banner@main/banner.js" data-original="https://zerolifestyle.co" async></script>
+<script 
+  src="https://cdn.jsdelivr.net/gh/<your-username>/dotnif-banner@main/banner.js" 
+  data-name="Zero Lifestyle" 
+  data-original="https://zerolifestyle.co" 
+  async>
+</script>
 ```
 
 ---
@@ -85,4 +101,4 @@ Commit and push to GitHub. Every single redesign website across the web automati
 - **100% Shadow DOM Shield**: Immune to all host CSS (Tailwind, Bootstrap, resets).
 - **Zero Emojis**: Strictly clean SVG icons.
 - **Mobile Responsive & Safe Insets**: Fluid layout with touch tracking.
-- **Live Interactive Sandbox**: Open `index.html` to test all 3 content modes in real time.
+- **Live Interactive Sandbox**: Open `index.html` to customize Name, Title, and URLs in real time.

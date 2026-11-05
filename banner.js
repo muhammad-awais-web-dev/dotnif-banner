@@ -7,8 +7,11 @@
  * Encapsulated via Shadow DOM: 100% immune to host styles.
  *
  * Content Modes:
- *   1. Redesign Concept (URL or Client Name):
- *      <script src="https://dotnif-banner.vercel.app/banner.js" data-original="https://zerolifestyle.co"></script>
+ *   1. Redesign Concept (Name, Title, and Original URL):
+ *      <script src="https://dotnif-banner.vercel.app/banner.js"
+ *              data-name="Zero Lifestyle"
+ *              data-title="Concept Redesign"
+ *              data-original="https://zerolifestyle.co"></script>
  *
  *   2. New Concept Experience:
  *      <script src="https://dotnif-banner.vercel.app/banner.js" data-concept="Avelo Carbon"></script>
@@ -183,7 +186,7 @@
   function parseConfig(el) {
     const scriptEl =
       document.currentScript ||
-      document.querySelector("script[data-original], script[data-concept], script[data-mode], script[data-type], script[src*='banner.js']");
+      document.querySelector("script[data-original], script[data-concept], script[data-mode], script[data-type], script[data-name], script[data-title], script[src*='banner.js']");
 
     const rawOriginal = (
       el?.dataset?.original ||
@@ -199,6 +202,23 @@
       ""
     ).trim();
 
+    const rawTitle = (
+      el?.dataset?.title ||
+      el?.getAttribute?.("data-title") ||
+      scriptEl?.dataset?.title ||
+      ""
+    ).trim();
+
+    const rawName = (
+      el?.dataset?.name ||
+      el?.getAttribute?.("data-name") ||
+      el?.dataset?.client ||
+      el?.getAttribute?.("data-client") ||
+      scriptEl?.dataset?.name ||
+      scriptEl?.dataset?.client ||
+      ""
+    ).trim();
+
     const explicitMode = (
       el?.dataset?.mode ||
       el?.getAttribute?.("data-mode") ||
@@ -209,67 +229,72 @@
       ""
     ).toLowerCase().trim();
 
-    const rawClient = (
-      el?.dataset?.client ||
-      el?.getAttribute?.("data-client") ||
-      scriptEl?.dataset?.client ||
-      ""
-    ).trim();
-
     // Mode 1: New Concept
     if (explicitMode === "new" || rawConcept || rawOriginal.startsWith("new:")) {
-      const rawName = rawConcept || rawOriginal.replace(/^new:\s*/i, "") || rawClient || "New Flagship Concept";
+      const nameVal = rawName || rawConcept || rawOriginal.replace(/^new:\s*/i, "") || "New Flagship Concept";
       return {
         mode: "new",
-        clientName: formatBrandName(rawName),
+        title: rawTitle || "New Concept",
+        clientName: formatBrandName(nameVal),
         originalUrl: "",
       };
     }
 
     // Mode 2: Plain Simple Text Version (When no params provided, or explicitly set to text/plain/simple)
-    if (explicitMode === "text" || explicitMode === "plain" || explicitMode === "simple" || (!rawOriginal && !rawClient)) {
+    if (explicitMode === "text" || explicitMode === "plain" || explicitMode === "simple" || (!rawOriginal && !rawName && !rawTitle && !rawConcept)) {
       return {
         mode: "text",
+        title: rawTitle || "Studio Showcase",
         clientName: "",
         originalUrl: "",
       };
     }
 
-    // Mode 3: Redesign Concept (When data-original URL or client is provided)
-    const target = rawOriginal || rawClient;
-    const isUrl = /^https?:\/\//i.test(target) || target.includes(".");
-    if (isUrl) {
-      let url = target;
-      if (!/^https?:\/\//i.test(url)) url = "https://" + url;
+    // Mode 3: Redesign Concept (When data-original URL, data-name, or data-title is provided)
+    const redesignTitle = rawTitle || "Concept Redesign";
+    let targetUrl = "";
+    let derivedName = rawName;
 
-      let hostname = "";
-      try {
-        hostname = new URL(url).hostname.replace(/^www\./i, "");
-      } catch (e) {
-        hostname = target.replace(/^https?:\/\/(www\.)?/i, "").split("/")[0];
+    if (rawOriginal) {
+      const isUrl = /^https?:\/\//i.test(rawOriginal) || rawOriginal.includes(".");
+      if (isUrl) {
+        targetUrl = rawOriginal;
+        if (!/^https?:\/\//i.test(targetUrl)) targetUrl = "https://" + targetUrl;
+
+        if (!derivedName) {
+          let hostname = "";
+          try {
+            hostname = new URL(targetUrl).hostname.replace(/^www\./i, "");
+          } catch (e) {
+            hostname = rawOriginal.replace(/^https?:\/\/(www\.)?/i, "").split("/")[0];
+          }
+          derivedName = hostname.split(".")[0];
+        }
+      } else if (!derivedName) {
+        derivedName = rawOriginal;
       }
-
-      const domainBase = hostname.split(".")[0];
-      const clientName = formatBrandName(domainBase);
-
-      return {
-        mode: "redesign",
-        clientName: clientName || "Client Project",
-        originalUrl: url,
-      };
     }
 
     return {
       mode: "redesign",
-      clientName: formatBrandName(target),
-      originalUrl: "",
+      title: redesignTitle,
+      clientName: formatBrandName(derivedName || "Client Project"),
+      originalUrl: targetUrl,
     };
   }
 
   /* ── 7. WEB COMPONENT IMPLEMENTATION ── */
   class DotNifRedesignBanner extends HTMLElement {
     static get observedAttributes() {
-      return ["data-original", "data-concept", "data-mode", "data-type", "data-client"];
+      return [
+        "data-original",
+        "data-concept",
+        "data-mode",
+        "data-type",
+        "data-client",
+        "data-name",
+        "data-title"
+      ];
     }
 
     constructor() {
@@ -317,9 +342,9 @@
     }
 
     render() {
-      const { mode, clientName, originalUrl } = this._config;
+      const { mode, title, clientName, originalUrl } = this._config;
 
-      let eyebrowLabel = "";
+      let eyebrowLabel = title;
       let statusText = "Taking projects";
       let titleHtml = "";
       let descHtml = "";
@@ -327,9 +352,9 @@
       let actionsHtml = "";
 
       if (mode === "redesign") {
-        eyebrowLabel = "Concept Redesign";
+        eyebrowLabel = title || "Concept Redesign";
         titleHtml = `<h2 class="dn-title">${clientName}</h2>`;
-        descHtml = `Architected by DotNif Studio — high-performance Next.js engineering, sub-second latency, and conversion-focused UX.`;
+        descHtml = `Architected by DotNif Studio — featuring high-performance Next.js engineering, sub-second latency, and conversion-focused UX.`;
         tagsHtml = `
           <span class="dn-tag">Next.js</span>
           <span class="dn-tag">WordPress</span>
@@ -353,7 +378,7 @@
           </a>
         `;
       } else if (mode === "new") {
-        eyebrowLabel = "New Concept";
+        eyebrowLabel = title || "New Concept";
         statusText = "Featured Build";
         titleHtml = `<h2 class="dn-title">${clientName}</h2>`;
         descHtml = `Designed & engineered from the ground up by DotNif Studio — bespoke interactive web experience, ultra-fast TTFB, and forward-thinking aesthetics.`;
@@ -374,7 +399,7 @@
         `;
       } else {
         // Plain Simple Text Version
-        eyebrowLabel = "Studio Showcase";
+        eyebrowLabel = title || "Studio Showcase";
         titleHtml = `<h2 class="dn-title dn-title-studio">Websites engineered for <span class="dn-gradient">growth.</span></h2>`;
         descHtml = `Boutique web studio building fast Next.js, WordPress and high-conversion e-commerce systems with sub-second performance.`;
         tagsHtml = `
