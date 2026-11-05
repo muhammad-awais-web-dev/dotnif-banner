@@ -6,12 +6,15 @@
  *
  * Encapsulated via Shadow DOM: 100% immune to host styles.
  *
- * Usage:
- *   <!-- 1. For a specific client redesign (accepts ONLY 1 optional parameter) -->
- *   <script src="https://dotnif-banner.vercel.app/banner.js" data-original="https://zerolifestyle.co"></script>
+ * Content Modes:
+ *   1. Redesign Concept (URL or Client Name):
+ *      <script src="https://dotnif-banner.vercel.app/banner.js" data-original="https://zerolifestyle.co"></script>
  *
- *   <!-- 2. Pure agency showcase mode (zero parameters needed) -->
- *   <script src="https://dotnif-banner.vercel.app/banner.js"></script>
+ *   2. New Concept Experience:
+ *      <script src="https://dotnif-banner.vercel.app/banner.js" data-concept="Avelo Carbon"></script>
+ *
+ *   3. Plain Simple Text Showcase (Zero parameters):
+ *      <script src="https://dotnif-banner.vercel.app/banner.js"></script>
  *
  * @license MIT
  * @see https://github.com/dotnif/dotnif-banner
@@ -158,12 +161,13 @@
       zerolifestyle: "Zero Lifestyle",
       dadducharger: "Daddu Charger",
       janfranko: "Jan Franko",
+      avelocarbon: "Avelo Carbon",
     };
     if (known[lower]) return known[lower];
 
     // Split compound words via common suffixes
     const m = lower.match(
-      /^([a-z0-9]+?)(lifestyle|charger|studio|design|agency|tech|store|shop|lab|hub|group|wear|app|pay)$/
+      /^([a-z0-9]+?)(lifestyle|charger|studio|design|agency|tech|store|shop|lab|hub|group|wear|app|pay|carbon|motor)$/
     );
     if (m) {
       const p1 = m[1].charAt(0).toUpperCase() + m[1].slice(1);
@@ -175,53 +179,97 @@
     return str.charAt(0).toUpperCase() + str.slice(1);
   }
 
-  /* ── 6. SINGLE PARAMETER RESOLUTION ── */
-  function parseSingleParameter(el) {
+  /* ── 6. THREE CONTENT VERSIONS RESOLUTION ── */
+  function parseConfig(el) {
     const scriptEl =
       document.currentScript ||
-      document.querySelector("script[data-original], script[src*='banner.js']");
+      document.querySelector("script[data-original], script[data-concept], script[data-mode], script[data-type], script[src*='banner.js']");
 
-    const raw = (
+    const rawOriginal = (
       el?.dataset?.original ||
       el?.getAttribute?.("data-original") ||
-      el?.dataset?.client ||
-      el?.getAttribute?.("data-client") ||
       scriptEl?.dataset?.original ||
-      scriptEl?.dataset?.client ||
-      window.DOTNIF_ORIGINAL ||
       ""
     ).trim();
 
-    if (!raw) {
-      return { hasTarget: false, clientName: "", originalUrl: "" };
+    const rawConcept = (
+      el?.dataset?.concept ||
+      el?.getAttribute?.("data-concept") ||
+      scriptEl?.dataset?.concept ||
+      ""
+    ).trim();
+
+    const explicitMode = (
+      el?.dataset?.mode ||
+      el?.getAttribute?.("data-mode") ||
+      el?.dataset?.type ||
+      el?.getAttribute?.("data-type") ||
+      scriptEl?.dataset?.mode ||
+      scriptEl?.dataset?.type ||
+      ""
+    ).toLowerCase().trim();
+
+    const rawClient = (
+      el?.dataset?.client ||
+      el?.getAttribute?.("data-client") ||
+      scriptEl?.dataset?.client ||
+      ""
+    ).trim();
+
+    // Mode 1: New Concept
+    if (explicitMode === "new" || rawConcept || rawOriginal.startsWith("new:")) {
+      const rawName = rawConcept || rawOriginal.replace(/^new:\s*/i, "") || rawClient || "New Flagship Concept";
+      return {
+        mode: "new",
+        clientName: formatBrandName(rawName),
+        originalUrl: "",
+      };
     }
 
-    const isUrl = /^https?:\/\//i.test(raw) || raw.includes(".");
+    // Mode 2: Plain Simple Text Version (When no params provided, or explicitly set to text/plain/simple)
+    if (explicitMode === "text" || explicitMode === "plain" || explicitMode === "simple" || (!rawOriginal && !rawClient)) {
+      return {
+        mode: "text",
+        clientName: "",
+        originalUrl: "",
+      };
+    }
+
+    // Mode 3: Redesign Concept (When data-original URL or client is provided)
+    const target = rawOriginal || rawClient;
+    const isUrl = /^https?:\/\//i.test(target) || target.includes(".");
     if (isUrl) {
-      let url = raw;
+      let url = target;
       if (!/^https?:\/\//i.test(url)) url = "https://" + url;
 
       let hostname = "";
       try {
         hostname = new URL(url).hostname.replace(/^www\./i, "");
       } catch (e) {
-        hostname = raw.replace(/^https?:\/\/(www\.)?/i, "").split("/")[0];
+        hostname = target.replace(/^https?:\/\/(www\.)?/i, "").split("/")[0];
       }
 
       const domainBase = hostname.split(".")[0];
       const clientName = formatBrandName(domainBase);
 
-      return { hasTarget: true, clientName: clientName || "Client Project", originalUrl: url };
+      return {
+        mode: "redesign",
+        clientName: clientName || "Client Project",
+        originalUrl: url,
+      };
     }
 
-    // Direct name provided, e.g. data-original="Zero Lifestyle"
-    return { hasTarget: true, clientName: formatBrandName(raw), originalUrl: "" };
+    return {
+      mode: "redesign",
+      clientName: formatBrandName(target),
+      originalUrl: "",
+    };
   }
 
   /* ── 7. WEB COMPONENT IMPLEMENTATION ── */
   class DotNifRedesignBanner extends HTMLElement {
     static get observedAttributes() {
-      return ["data-original", "data-client"];
+      return ["data-original", "data-concept", "data-mode", "data-type", "data-client"];
     }
 
     constructor() {
@@ -243,7 +291,7 @@
 
     attributeChangedCallback(name, oldVal, newVal) {
       if (oldVal !== newVal && this.isConnected) {
-        this._config = parseSingleParameter(this);
+        this._config = parseConfig(this);
         this.render();
         this.initWebGL();
         this.bindEvents();
@@ -254,7 +302,7 @@
     }
 
     connectedCallback() {
-      this._config = parseSingleParameter(this);
+      this._config = parseConfig(this);
       this.render();
       this.initWebGL();
       this.bindEvents();
@@ -269,25 +317,55 @@
     }
 
     render() {
-      const { hasTarget, clientName, originalUrl } = this._config;
+      const { mode, clientName, originalUrl } = this._config;
 
-      // Clean typographic hierarchy according to /frontend-design
-      const titleHtml = hasTarget
-        ? `<div class="dn-eyebrow-label">Concept Redesign</div>
-           <h2 class="dn-title">${clientName}</h2>`
-        : `<h2 class="dn-title dn-title-studio">Websites engineered for <span class="dn-gradient">growth.</span></h2>`;
-
-      const descHtml = hasTarget
-        ? `Architected by DotNif Studio — featuring high-performance Next.js infrastructure, sub-second latency, and conversion-focused UX.`
-        : `Boutique web studio building fast Next.js, WordPress and high-conversion e-commerce systems.`;
-
-      // Balanced action buttons (1-line guaranteed, balanced widths)
+      let eyebrowLabel = "";
+      let statusText = "Taking projects";
+      let titleHtml = "";
+      let descHtml = "";
+      let tagsHtml = "";
       let actionsHtml = "";
-      if (hasTarget && originalUrl) {
+
+      if (mode === "redesign") {
+        eyebrowLabel = "Concept Redesign";
+        titleHtml = `<h2 class="dn-title">${clientName}</h2>`;
+        descHtml = `Architected by DotNif Studio — high-performance Next.js engineering, sub-second latency, and conversion-focused UX.`;
+        tagsHtml = `
+          <span class="dn-tag">Next.js</span>
+          <span class="dn-tag">WordPress</span>
+          <span class="dn-tag">WooCommerce</span>
+          <span class="dn-tag">SEO</span>
+        `;
         actionsHtml = `
-          <a href="${originalUrl}" target="_blank" rel="noopener noreferrer" class="dn-btn dn-btn-white">
-            Original Site
-            ${SVGS.externalLink}
+          ${
+            originalUrl
+              ? `<a href="${originalUrl}" target="_blank" rel="noopener noreferrer" class="dn-btn dn-btn-white">
+                  Original Site
+                  ${SVGS.externalLink}
+                </a>`
+              : `<a href="${MASTER_CONFIG.contactUrl}" target="_blank" rel="noopener noreferrer" class="dn-btn dn-btn-white">
+                  Book a Call
+                </a>`
+          }
+          <a href="${MASTER_CONFIG.studioDomain}" target="_blank" rel="noopener noreferrer" class="dn-btn dn-btn-blue">
+            DotNif Studio
+            ${SVGS.arrowRight}
+          </a>
+        `;
+      } else if (mode === "new") {
+        eyebrowLabel = "New Concept";
+        statusText = "Featured Build";
+        titleHtml = `<h2 class="dn-title">${clientName}</h2>`;
+        descHtml = `Designed & engineered from the ground up by DotNif Studio — bespoke interactive web experience, ultra-fast TTFB, and forward-thinking aesthetics.`;
+        tagsHtml = `
+          <span class="dn-tag">Next.js</span>
+          <span class="dn-tag">TypeScript</span>
+          <span class="dn-tag">Tailwind</span>
+          <span class="dn-tag">Full-Stack</span>
+        `;
+        actionsHtml = `
+          <a href="${MASTER_CONFIG.contactUrl}" target="_blank" rel="noopener noreferrer" class="dn-btn dn-btn-white">
+            Book a Call
           </a>
           <a href="${MASTER_CONFIG.studioDomain}" target="_blank" rel="noopener noreferrer" class="dn-btn dn-btn-blue">
             DotNif Studio
@@ -295,6 +373,16 @@
           </a>
         `;
       } else {
+        // Plain Simple Text Version
+        eyebrowLabel = "Studio Showcase";
+        titleHtml = `<h2 class="dn-title dn-title-studio">Websites engineered for <span class="dn-gradient">growth.</span></h2>`;
+        descHtml = `Boutique web studio building fast Next.js, WordPress and high-conversion e-commerce systems with sub-second performance.`;
+        tagsHtml = `
+          <span class="dn-tag">Next.js</span>
+          <span class="dn-tag">WordPress</span>
+          <span class="dn-tag">Shopify</span>
+          <span class="dn-tag">Technical SEO</span>
+        `;
         actionsHtml = `
           <a href="${MASTER_CONFIG.contactUrl}" target="_blank" rel="noopener noreferrer" class="dn-btn dn-btn-white">
             Book a Call
@@ -396,7 +484,7 @@
             position: relative;
             overflow: hidden;
             border-radius: 27px;
-            /* 68px top padding guarantees 32px of clear breathing space below the perched orb */
+            /* 68px top padding guarantees 32px of clean breathing space below the perched orb */
             padding: 68px 26px 26px;
             text-align: center;
             background: radial-gradient(130% 70% at 50% 0%, rgba(47, 107, 255, 0.45), rgba(47, 107, 255, 0) 65%),
@@ -731,18 +819,16 @@
                 </div>
                 <div class="dn-status-badge">
                   <span class="dn-status-dot"></span>
-                  Taking projects
+                  ${statusText}
                 </div>
               </div>
 
+              <div class="dn-eyebrow-label">${eyebrowLabel}</div>
               ${titleHtml}
               <p class="dn-desc">${descHtml}</p>
 
               <div class="dn-tags">
-                <span class="dn-tag">Next.js</span>
-                <span class="dn-tag">WordPress</span>
-                <span class="dn-tag">WooCommerce</span>
-                <span class="dn-tag">SEO</span>
+                ${tagsHtml}
               </div>
 
               <div class="dn-actions">
@@ -793,8 +879,15 @@
       const rect = this.$orb.getBoundingClientRect();
       const cx = rect.left + rect.width / 2;
       const cy = rect.top + rect.height / 2;
+
+      // Horizontal tracking
       const dx = (e.clientX - cx) / (window.innerWidth / 2);
-      const dy = (e.clientY - cy) / (window.innerHeight / 2);
+
+      // Vertically inverted fix:
+      // When cursor is above the orb (e.clientY < cy), (cy - e.clientY) is positive,
+      // correctly directing the gaze UP towards the pointer.
+      const dy = (cy - e.clientY) / (window.innerHeight / 2);
+
       this._lookTarget.x = Math.max(-1, Math.min(1, dx * 1.5));
       this._lookTarget.y = Math.max(-1, Math.min(1, dy * 1.5));
     }
