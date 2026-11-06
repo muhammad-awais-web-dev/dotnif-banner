@@ -336,6 +336,16 @@
       }
     }
 
+    /* ── LOCALSTORAGE KEY scoped per site so each client's banner tracks independently ── */
+    _lsKey() {
+      const name = (this.getAttribute("data-name") || this.getAttribute("data-original") || "default")
+        .toLowerCase()
+        .replace(/https?:\/\/(www\.)?/i, "")
+        .replace(/[^a-z0-9]/g, "_")
+        .slice(0, 48);
+      return `dotnif_banner_seen_${name}`;
+    }
+
     connectedCallback() {
       this._config = parseConfig(this);
       this.render();
@@ -353,6 +363,16 @@
             shouldAutoOpen = false;
           } else {
             sessionStorage.setItem("dotnif_banner_auto_opened", "true");
+          }
+        } catch (_) {}
+      }
+
+      // localStorage persistence: once a user has seen & dismissed the banner,
+      // never auto-open it again on subsequent visits or refreshes.
+      if (shouldAutoOpen) {
+        try {
+          if (localStorage.getItem(this._lsKey())) {
+            shouldAutoOpen = false;
           }
         } catch (_) {}
       }
@@ -1104,6 +1124,11 @@
       // Quick blink on dismissal
       this._blinkTarget = 1;
       setTimeout(() => { this._blinkTarget = 0; }, 180);
+
+      // Persist dismissal: banner will never auto-open again for this user on this site
+      try {
+        localStorage.setItem(this._lsKey(), "1");
+      } catch (_) {}
     }
 
     /* ── CLOSE TIMER PROCESS FOR DEFAULT AUTO-OPEN ── */
